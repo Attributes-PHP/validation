@@ -7,7 +7,6 @@
 namespace Attributes\Validation\Transformers\Types;
 
 use Attributes\Validation\Exceptions\TransformException;
-use Exception;
 
 class Boolean implements TypeCast
 {
@@ -21,10 +20,11 @@ class Boolean implements TypeCast
      */
     public function cast(mixed $value): bool
     {
-        try {
-            return (bool) $value;
-        } catch (Exception $e) {
-            throw new TransformException('Invalid floating point', previous: $e);
+        $filteredValue = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($filteredValue === null) {
+            throw new TransformException('Invalid boolean');
         }
+
+        return $filteredValue;
     }
 }

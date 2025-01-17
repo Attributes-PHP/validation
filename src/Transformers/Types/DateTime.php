@@ -25,7 +25,7 @@ class DateTime implements TypeCast
         try {
             return new BaseDateTime($value);
         } catch (Exception $e) {
-            throw new TransformException('Invalid floating point', previous: $e);
+            throw new TransformException('Invalid datetime', previous: $e);
         }
     }
 }

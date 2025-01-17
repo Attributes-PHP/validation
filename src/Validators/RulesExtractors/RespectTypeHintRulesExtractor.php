@@ -4,6 +4,8 @@ namespace Attributes\Validation\Validators\RulesExtractors;
 
 use Attributes\Validation\Property;
 use Attributes\Validation\Validators\Rules as TypeRules;
+use DateTime;
+use DateTimeInterface;
 use Generator;
 use ReflectionNamedType;
 use ReflectionUnionType;
@@ -74,6 +76,8 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
                 'string' => new Rules\StringType,
                 'array' => new Rules\ArrayType,
                 'object' => new Rules\ObjectType,
+                DateTime::class => new Rules\DateTime,
+                DateTimeInterface::class => new Rules\DateTime,
             ];
         }
 
@@ -84,6 +88,8 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
             'string' => new Rules\StringVal,
             'array' => new Rules\ArrayVal,
             'object' => new Rules\ObjectType,
+            DateTime::class => new Rules\DateTime,
+            DateTimeInterface::class => new Rules\DateTime,
         ];
     }
 }

@@ -5,7 +5,6 @@ namespace Attributes\Validation\Transformers;
 use Attributes\Validation\Exceptions\TransformException;
 use Attributes\Validation\Property;
 use Attributes\Validation\Transformers\Types as Types;
-use Attributes\Validation\Transformers\Types\TypeCast;
 use DateTime;
 use DateTimeInterface;
 use Exception;
@@ -15,9 +14,12 @@ class CastPropertyTransformer implements PropertyTransformer
 {
     private array $mappings;
 
-    public function __construct(array $mappings = [])
+    private array $parentMappings;
+
+    public function __construct(array $mappings = [], array $parentMappings = [])
     {
         $this->mappings = array_merge($this->getDefaultMappings(), $mappings);
+        $this->parentMappings = array_merge($this->getDefaultParentMappings(), $parentMappings);
     }
 
     /**
@@ -65,13 +67,9 @@ class CastPropertyTransformer implements PropertyTransformer
     protected function castValue(ReflectionNamedType $propertyType, mixed $value): mixed
     {
         $propertyTypeName = $propertyType->getName();
-        if (! isset($this->mappings[$propertyTypeName])) {
-            throw new TransformException("Unsupported cast of '{$propertyTypeName}' property type");
-        }
-
-        $castClass = $this->mappings[$propertyTypeName];
-        if (! is_subclass_of($castClass, TypeCast::class)) {
-            $expectedClass = TypeCast::class;
+        $castClass = $this->mappings[$propertyTypeName] ?? $this->getParentTypeClass($propertyTypeName);
+        if (! is_subclass_of($castClass, Types\TypeCast::class)) {
+            $expectedClass = Types\TypeCast::class;
             throw new TransformException("Unable to cast '$propertyTypeName'. Expected '$castClass' to implement $expectedClass");
         }
 
@@ -86,7 +84,23 @@ class CastPropertyTransformer implements PropertyTransformer
         }
     }
 
-    private function getDefaultMappings(): array
+    private function getParentTypeClass(string $propertyTypeName): string
+    {
+        if (! class_exists($propertyTypeName)) {
+            throw new TransformException("Unsupported cast of '{$propertyTypeName}' property type");
+        }
+
+        foreach ($this->parentMappings as $type) {
+            if (is_subclass_of($propertyTypeName, $type)) {
+                $this->mappings[$propertyTypeName] = $this->mappings[$type];
+
+                return $type;
+            }
+        }
+        throw new TransformException("Unsupported cast of '{$propertyTypeName}' property type");
+    }
+
+    protected function getDefaultMappings(): array
     {
         return [
             // Builtins
@@ -97,6 +111,13 @@ class CastPropertyTransformer implements PropertyTransformer
             // Class builtins
             DateTime::class => Types\DateTime::class,
             DateTimeInterface::class => Types\DateTime::class,
+        ];
+    }
+
+    protected function getDefaultParentMappings(): array
+    {
+        return [
+            DateTimeInterface::class,
         ];
     }
 }
