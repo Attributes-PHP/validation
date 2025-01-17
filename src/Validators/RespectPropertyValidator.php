@@ -4,6 +4,7 @@ namespace Attributes\Validation\Validators;
 
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Property;
+use Attributes\Validation\ValidationResult;
 use Attributes\Validation\Validators\RulesExtractors\ChainRulesExtractor;
 use Attributes\Validation\Validators\RulesExtractors\PropertyRulesExtractor;
 use Attributes\Validation\Validators\RulesExtractors\RespectAttributesRulesExtractor;
@@ -29,18 +30,18 @@ class RespectPropertyValidator implements PropertyValidator
      */
     public function validate(Property $property): void
     {
-        $validationResult = new PropertyValidationResult($property);
+        $validationResult = new ValidationResult;
         foreach ($this->extractor->getRulesFromProperty($property) as $rule) {
             try {
                 $rule->assert($property->getValue());
             } catch (RespectValidationException $error) {
-                $validationResult->addError($error);
+                $validationResult->addError($error, $property->getName());
             }
         }
 
         if ($validationResult->hasErrors()) {
             $propertyName = $property->getName();
-            throw new ValidationException("Invalid property '$propertyName'", $validationResult->getErrors());
+            throw new ValidationException("Invalid property '$propertyName'", $validationResult);
         }
     }
 }

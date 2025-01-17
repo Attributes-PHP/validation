@@ -44,15 +44,15 @@ class Validator implements Validatable
 
         $validModel = clone $model;
         $reflectionClass = new ReflectionClass($validModel);
-        $errors = [];
+        $validationResult = new ValidationResult;
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $propertyName = $reflectionProperty->getName();
 
             if (! isset($data[$propertyName])) {
                 if (! $reflectionProperty->isInitialized($model)) {
-                    $errors[$propertyName] = ["Missing required property '$propertyName'"];
+                    $validationResult->addErrorMessage("Missing required property '$propertyName'", $propertyName);
                     if ($this->stopAtFirstError) {
-                        throw new ValidationException('Validation failed', $errors);
+                        throw new ValidationException('Validation failed', $validationResult);
                     }
                 }
 
@@ -64,19 +64,19 @@ class Validator implements Validatable
             try {
                 $this->validator->validate($property);
                 $value = $this->transformer->transform($property);
-                $reflectionProperty->setValue($model, $value);
+                $reflectionProperty->setValue($validModel, $value);
             } catch (BaseException $error) {
-                $errors[$propertyName] = [$error->getMessage()];
+                $validationResult->addError($error, $propertyName);
                 if ($this->stopAtFirstError) {
-                    throw new ValidationException('Validation failed', $errors, previous: $error);
+                    throw new ValidationException('Validation failed', $validationResult, previous: $error);
                 }
             } catch (ReflectionException $error) {
                 throw new ValidationException('Invalid base model property attributes', previous: $error);
             }
         }
 
-        if ($errors) {
-            throw new ValidationException('Validation failed', $errors);
+        if ($validationResult->hasErrors()) {
+            throw new ValidationException('Validation failed', $validationResult);
         }
 
         return $validModel;

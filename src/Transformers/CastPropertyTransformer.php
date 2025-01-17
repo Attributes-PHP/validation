@@ -4,10 +4,22 @@ namespace Attributes\Validation\Transformers;
 
 use Attributes\Validation\Exceptions\TransformException;
 use Attributes\Validation\Property;
+use Attributes\Validation\Transformers\Types as Types;
+use Attributes\Validation\Transformers\Types\TypeCast;
+use DateTime;
+use DateTimeInterface;
+use Exception;
 use ReflectionNamedType;
 
 class CastPropertyTransformer implements PropertyTransformer
 {
+    private array $mappings;
+
+    public function __construct(array $mappings = [])
+    {
+        $this->mappings = array_merge($this->getDefaultMappings(), $mappings);
+    }
+
     /**
      * Casts a value according to the type hint of the given property
      *
@@ -25,7 +37,7 @@ class CastPropertyTransformer implements PropertyTransformer
 
         $propertyType = $reflectionProperty->getType();
         if ($propertyType instanceof ReflectionNamedType) {
-            return $this->castValueFromReflectionNamedType($propertyType, $property->getValue());
+            return $this->castValue($propertyType, $property->getValue());
         }
 
         $allPropertyTypes = $propertyType->getTypes();
@@ -33,7 +45,7 @@ class CastPropertyTransformer implements PropertyTransformer
         for ($i = count($allPropertyTypes) - 1; $i >= 0; $i--) {
             $type = $allPropertyTypes[$i];
             try {
-                return $this->castValueFromReflectionNamedType($type, $property->getValue());
+                return $this->castValue($type, $property->getValue());
             } catch (TransformException $error) {
             }
         }
@@ -42,16 +54,49 @@ class CastPropertyTransformer implements PropertyTransformer
     }
 
     /**
-     * @throws TransformException - If unable to cast value to given type
+     * Tries to cast a given value according to the type hint
+     *
+     * @param  ReflectionNamedType  $propertyType  - The given property type
+     * @param  mixed  $value  - The value to cast
+     * @return mixed - Cast value
+     *
+     * @throws TransformException - If unable to cast the given value
      */
-    protected function castValueFromReflectionNamedType(ReflectionNamedType $propertyType, mixed $value): mixed
+    protected function castValue(ReflectionNamedType $propertyType, mixed $value): mixed
     {
-        if ($propertyType->isBuiltin()) {
-            if (! settype($value, $propertyType->getName())) {
-                throw new TransformException("Unable to cast '$value' into a '{$propertyType->getName()}'");
-            }
+        $propertyTypeName = $propertyType->getName();
+        if (! isset($this->mappings[$propertyTypeName])) {
+            throw new TransformException("Unsupported cast of '{$propertyTypeName}' property type");
         }
 
-        return $value;
+        $castClass = $this->mappings[$propertyTypeName];
+        if (! is_subclass_of($castClass, TypeCast::class)) {
+            $expectedClass = TypeCast::class;
+            throw new TransformException("Unable to cast '$propertyTypeName'. Expected '$castClass' to implement $expectedClass");
+        }
+
+        try {
+            $cast = new $castClass;
+
+            return $cast->cast($value);
+        } catch (TransformException $error) {
+            throw $error;
+        } catch (Exception $error) {
+            throw new TransformException("Unexpected error while casting $propertyTypeName", previous: $error);
+        }
+    }
+
+    private function getDefaultMappings(): array
+    {
+        return [
+            // Builtins
+            'bool' => Types\Boolean::class,
+            'float' => Types\FloatingPoint::class,
+            'int' => Types\Integer::class,
+            'string' => Types\RawString::class,
+            // Class builtins
+            DateTime::class => Types\DateTime::class,
+            DateTimeInterface::class => Types\DateTime::class,
+        ];
     }
 }

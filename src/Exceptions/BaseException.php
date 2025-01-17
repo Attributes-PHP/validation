@@ -2,21 +2,22 @@
 
 namespace Attributes\Validation\Exceptions;
 
+use Attributes\Validation\ValidationResult;
 use Exception;
 use Throwable;
 
 abstract class BaseException extends Exception
 {
-    private array $propertyErrors;
+    private ValidationResult $validationResult;
 
-    public function __construct(string $message, array $propertyErrors = [], ?Throwable $previous = null)
+    public function __construct(string $message, ?ValidationResult $result = null, ?Throwable $previous = null)
     {
-        $this->propertyErrors = $propertyErrors;
+        $this->validationResult = $result;
         parent::__construct($message, 0, $previous);
     }
 
-    public function getPropertyErrors(): array
+    public function getValidationResult(): ValidationResult
     {
-        return $this->propertyErrors;
+        return $this->validationResult;
     }
 }
