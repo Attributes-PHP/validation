@@ -5,7 +5,6 @@ namespace Attributes\Validation;
 use Attributes\Validation\Exceptions\BaseException;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Transformers\CastPropertyTransformer;
-use Attributes\Validation\Transformers\DoNothingPropertyTransformer;
 use Attributes\Validation\Transformers\PropertyTransformer;
 use Attributes\Validation\Validators\PropertyValidator;
 use Attributes\Validation\Validators\RespectPropertyValidator;
@@ -22,8 +21,8 @@ class Validator implements Validatable
 
     public function __construct(?PropertyValidator $validator = null, ?PropertyTransformer $transformer = null, bool $stopAtFirstError = false, bool $strict = false)
     {
-        $this->validator = $validator ?? new RespectPropertyValidator;
-        $this->transformer = $transformer ?? $strict ? new DoNothingPropertyTransformer : new CastPropertyTransformer;
+        $this->validator = $validator ?? new RespectPropertyValidator(strict: $strict);
+        $this->transformer = $transformer ?? new CastPropertyTransformer(strict: $strict);
         $this->stopAtFirstError = $stopAtFirstError;
     }
 
@@ -68,7 +67,7 @@ class Validator implements Validatable
             } catch (BaseException $error) {
                 $validationResult->addError($error, $propertyName);
                 if ($this->stopAtFirstError) {
-                    throw new ValidationException('Validation failed', $validationResult, previous: $error);
+                    throw new ValidationException('Invalid data', $validationResult, previous: $error);
                 }
             } catch (ReflectionException $error) {
                 throw new ValidationException('Invalid base model property attributes', previous: $error);
@@ -76,7 +75,7 @@ class Validator implements Validatable
         }
 
         if ($validationResult->hasErrors()) {
-            throw new ValidationException('Validation failed', $validationResult);
+            throw new ValidationException('Invalid data', $validationResult);
         }
 
         return $validModel;

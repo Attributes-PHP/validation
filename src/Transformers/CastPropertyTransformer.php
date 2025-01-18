@@ -16,10 +16,13 @@ class CastPropertyTransformer implements PropertyTransformer
 
     private array $parentMappings;
 
-    public function __construct(array $mappings = [], array $parentMappings = [])
+    private bool $strict;
+
+    public function __construct(array $mappings = [], array $parentMappings = [], bool $strict = false)
     {
         $this->mappings = array_merge($this->getDefaultMappings(), $mappings);
         $this->parentMappings = array_merge($this->getDefaultParentMappings(), $parentMappings);
+        $this->strict = $strict;
     }
 
     /**
@@ -52,7 +55,7 @@ class CastPropertyTransformer implements PropertyTransformer
             }
         }
 
-        throw new TransformException("Unable to cast property value '{$property->getName()}' into any of the Union types");
+        throw new TransformException("Unable to cast property '{$property->getName()}' into any of the Union types");
     }
 
     /**
@@ -67,16 +70,16 @@ class CastPropertyTransformer implements PropertyTransformer
     protected function castValue(ReflectionNamedType $propertyType, mixed $value): mixed
     {
         $propertyTypeName = $propertyType->getName();
-        $castClass = $this->mappings[$propertyTypeName] ?? $this->getParentTypeClass($propertyTypeName);
+        $castClass = $this->mappings[$propertyTypeName] ?? $this->getParentTypeClass($propertyTypeName, $value);
         if (! is_subclass_of($castClass, Types\TypeCast::class)) {
             $expectedClass = Types\TypeCast::class;
             throw new TransformException("Unable to cast '$propertyTypeName'. Expected '$castClass' to implement $expectedClass");
         }
 
         try {
-            $cast = new $castClass;
+            $cast = $castClass === Types\StrictType::class ? new $castClass($propertyTypeName) : new $castClass;
 
-            return $cast->cast($value);
+            return $cast->cast($value, $this->strict);
         } catch (TransformException $error) {
             throw $error;
         } catch (Exception $error) {
@@ -84,7 +87,7 @@ class CastPropertyTransformer implements PropertyTransformer
         }
     }
 
-    private function getParentTypeClass(string $propertyTypeName): string
+    private function getParentTypeClass(string $propertyTypeName): ?string
     {
         if (! class_exists($propertyTypeName)) {
             throw new TransformException("Unsupported cast of '{$propertyTypeName}' property type");
@@ -97,7 +100,8 @@ class CastPropertyTransformer implements PropertyTransformer
                 return $type;
             }
         }
-        throw new TransformException("Unsupported cast of '{$propertyTypeName}' property type");
+
+        return $this->mappings['default'];
     }
 
     protected function getDefaultMappings(): array
@@ -111,6 +115,8 @@ class CastPropertyTransformer implements PropertyTransformer
             // Class builtins
             DateTime::class => Types\DateTime::class,
             DateTimeInterface::class => Types\DateTime::class,
+            // Default casting
+            'default' => Types\StrictType::class,
         ];
     }
 
