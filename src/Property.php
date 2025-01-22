@@ -33,9 +33,9 @@ class Property
         return $this->property;
     }
 
-    public function addTypeHintSuggestion(string $suggestion): void
+    public function addTypeHintSuggestions(array $suggestions): void
     {
-        $this->typeHintSuggestions[] = $suggestion;
+        $this->typeHintSuggestions = array_merge($this->typeHintSuggestions, $suggestions);
     }
 
     public function getTypeHintSuggestions(): array

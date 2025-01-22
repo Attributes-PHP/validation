@@ -9,7 +9,8 @@ declare(strict_types=1);
 
 namespace Attributes\Validation\Validators\Rules;
 
-use Respect\Validation\Exceptions\AnyOfException;
+use Attributes\Validation\Validators\Rules\Exceptions\UnionException;
+use Respect\Validation\Exceptions\NestedValidationException;
 use Respect\Validation\Exceptions\ValidationException;
 use Respect\Validation\Rules\Core\Composite;
 use Respect\Validation\Validatable;
@@ -24,7 +25,7 @@ final class Union extends Composite
 {
     private array $mapping;
 
-    private ?string $validTypeHint = null;
+    private array $validTypeHints = [];
 
     public function __construct(array $mapping, Validatable $rule1, Validatable $rule2, Validatable ...$rules)
     {
@@ -42,11 +43,60 @@ final class Union extends Composite
         $numRules = count($validators);
         $numExceptions = count($exceptions);
         if ($numExceptions === $numRules) {
-            /** @var AnyOfException $anyOfException */
+            /** @var UnionException $anyOfException */
             $anyOfException = $this->reportError($input);
             $anyOfException->addChildren($exceptions);
 
             throw $anyOfException;
+        }
+    }
+
+    /**
+     * Returns all the exceptions throw when asserting all rules.
+     *
+     * @param  mixed  $input
+     * @return ValidationException[]
+     */
+    protected function getAllThrownExceptions($input): array
+    {
+        return array_filter(
+            array_map(
+                function (Validatable $rule) use ($input): ?ValidationException {
+                    try {
+                        $rule->assert($input);
+                        $this->addValidRule($rule);
+                    } catch (ValidationException $exception) {
+                        $this->updateExceptionTemplate($exception);
+
+                        return $exception;
+                    }
+
+                    return null;
+                },
+                $this->getRules()
+            )
+        );
+    }
+
+    private function addValidRule(Validatable $rule): void
+    {
+        $this->validTypeHints[] = $this->mapping[$rule->getName()];
+    }
+
+    private function updateExceptionTemplate(ValidationException $exception): void
+    {
+        if ($this->template === null || $exception->hasCustomTemplate()) {
+            return;
+        }
+
+        $exception->updateTemplate($this->template);
+
+        if (! $exception instanceof NestedValidationException) {
+            return;
+        }
+
+        foreach ($exception->getChildren() as $childException) {
+            $this->updateExceptionTemplate($childException);
         }
     }
 
@@ -91,8 +141,8 @@ final class Union extends Composite
         throw $this->reportError($input);
     }
 
-    public function getValidTypeHint(): ?string
+    public function getValidTypeHints(): array
     {
-        return $this->validTypeHint;
+        return $this->validTypeHints;
     }
 }

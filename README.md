@@ -24,16 +24,8 @@ use Attributes\Validation\Validator;
 
 class Person extends BaseModel
 {
-    private float|int $age = 100;
-    private DateTime $birthday;
-
-    public function getAge() {
-        return $this->age;
-    }
-
-    public function getBirthday() {
-        return $this->birthday;
-    }
+    public float|int $age;
+    public DateTime $birthday;
 }
 
 $rawData = [
@@ -44,8 +36,8 @@ $rawData = [
 $validator = new Validator();
 $person = $validator->validate($rawData, new Person);
 
-echo "Age: {$person->getAge()}\n";                                   // Age: 100
-echo "Birthday: {$person->getBirthday()->format('Y-m-d H-i-s')}\n";  // Birthday: 2025-01-01 15-46-55
+var_dump($person->age);      // int(100)
+var_dump($person->birthday); // object(DateTime) { ["date"] => string(26) "2025-01-01 15:46:55.000000", (...) }
 ```
 
 ## Installation

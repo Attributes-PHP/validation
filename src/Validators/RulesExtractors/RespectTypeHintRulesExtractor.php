@@ -2,6 +2,7 @@
 
 namespace Attributes\Validation\Validators\RulesExtractors;
 
+use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Property;
 use Attributes\Validation\Validators\Rules as TypeRules;
 use DateTime;
@@ -26,6 +27,8 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
      *
      * @param  Property  $property  - Property to yield the rules from
      * @return Generator<Simple>
+     *
+     * @throws ValidationException
      */
     public function getRulesFromProperty(Property $property): Generator
     {
@@ -40,11 +43,10 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
                 return;
             }
             yield $this->typeHintRules[$propertyType->getName()];
-        }
-
-        if ($propertyType instanceof ReflectionUnionType) {
+        } elseif ($propertyType instanceof ReflectionUnionType) {
             $rules = [];
             $mapping = [];
+
             foreach ($propertyType->getTypes() as $type) {
                 if (! isset($this->typeHintRules[$type->getName()])) {
                     continue;
@@ -54,11 +56,11 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
                 $rules[] = $rule;
                 $mapping[$rule->getName()] = $type->getName();
             }
-            if ($rules) {
-                yield new TypeRules\Union($mapping, ...$rules);
+            if (! $rules) {
+                throw new ValidationException("Missing Union rules for {$property->getName()}");
             }
 
-            return;
+            yield new TypeRules\Union($mapping, ...$rules);
         }
     }
 

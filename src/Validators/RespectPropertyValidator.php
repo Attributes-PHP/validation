@@ -12,6 +12,7 @@ use Attributes\Validation\Validators\RulesExtractors\RespectAttributesRulesExtra
 use Attributes\Validation\Validators\RulesExtractors\RespectTypeHintRulesExtractor;
 use ReflectionException;
 use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
+use Respect\Validation\Factory;
 
 class RespectPropertyValidator implements PropertyValidator
 {
@@ -22,6 +23,12 @@ class RespectPropertyValidator implements PropertyValidator
         $this->extractor = $extractor ?? new ChainRulesExtractor(
             new RespectTypeHintRulesExtractor(strict: $strict),
             new RespectAttributesRulesExtractor,
+        );
+
+        Factory::setDefaultInstance(
+            (new Factory)
+                ->withRuleNamespace('Attributes\\Validation\\Validators\\Rules')
+                ->withExceptionNamespace('Attributes\\Validation\\Validators\\Rules\\Exceptions')
         );
     }
 
@@ -36,7 +43,7 @@ class RespectPropertyValidator implements PropertyValidator
             try {
                 $rule->assert($property->getValue());
                 if ($rule instanceof Union) {
-                    $property->addTypeHintSuggestion($rule->getValidTypeHint());
+                    $property->addTypeHintSuggestions($rule->getValidTypeHints());
                 }
             } catch (RespectValidationException $error) {
                 $validationResult->addError($error, $property->getName());
