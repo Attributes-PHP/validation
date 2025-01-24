@@ -8,7 +8,7 @@ use Respect\Validation\Exceptions\AllOfException;
 
 use function count;
 
-class Union extends InternalType
+class Intersection extends InternalType
 {
     public function assert($input): void
     {

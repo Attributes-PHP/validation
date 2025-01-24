@@ -8,6 +8,7 @@ use Attributes\Validation\Validators\Rules as TypeRules;
 use DateTime;
 use DateTimeInterface;
 use Generator;
+use ReflectionIntersectionType;
 use ReflectionNamedType;
 use ReflectionUnionType;
 use Respect\Validation\Rules as Rules;
@@ -43,25 +44,40 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
                 return;
             }
             yield $this->typeHintRules[$propertyType->getName()];
-        } elseif ($propertyType instanceof ReflectionUnionType) {
-            $rules = [];
-            $mapping = [];
-
-            foreach ($propertyType->getTypes() as $type) {
-                if (! isset($this->typeHintRules[$type->getName()])) {
-                    continue;
-                }
-
-                $rule = $this->typeHintRules[$type->getName()];
-                $rules[] = $rule;
-                $mapping[$rule->getName()] = $type->getName();
-            }
-            if (! $rules) {
-                throw new ValidationException("Missing Union rules for {$property->getName()}");
-            }
-
-            yield new TypeRules\Union($mapping, ...$rules);
+        } elseif ($propertyType instanceof ReflectionUnionType || $propertyType instanceof ReflectionIntersectionType) {
+            yield $this->getTypeRuleFromReflectionProperty($property, $propertyType);
+        } else {
+            throw new ValidationException("Unsupported type {$propertyType->getName()}");
         }
+    }
+
+    /**
+     * Retrieves the expected rule according to the given type
+     *
+     * @return TypeRules\Union|TypeRules\Intersection
+     *
+     * @throws ValidationException
+     */
+    private function getTypeRuleFromReflectionProperty(Property $property, ReflectionUnionType|ReflectionIntersectionType $propertyType): TypeRules\InternalType
+    {
+        $rules = [];
+        $mapping = [];
+
+        foreach ($propertyType->getTypes() as $type) {
+            if (! isset($this->typeHintRules[$type->getName()])) {
+                continue;
+            }
+
+            $rule = $this->typeHintRules[$type->getName()];
+            $rules[] = $rule;
+            $mapping[$rule->getName()] = $type->getName();
+        }
+
+        if (! $rules) {
+            throw new ValidationException("Missing rules for {$property->getName()}");
+        }
+
+        return is_a($propertyType, ReflectionUnionType::class) ? new TypeRules\Union($mapping, ...$rules) : new TypeRules\Intersection($mapping, ...$rules);
     }
 
     /**
