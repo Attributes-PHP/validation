@@ -45,7 +45,7 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
             }
             yield $this->typeHintRules[$propertyType->getName()];
         } elseif ($propertyType instanceof ReflectionUnionType || $propertyType instanceof ReflectionIntersectionType) {
-            yield $this->getTypeRuleFromReflectionProperty($property, $propertyType);
+            yield from $this->getTypeRuleFromReflectionProperty($propertyType);
         } else {
             throw new ValidationException("Unsupported type {$propertyType->getName()}");
         }
@@ -54,11 +54,9 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
     /**
      * Retrieves the expected rule according to the given type
      *
-     * @return TypeRules\Union|TypeRules\Intersection
-     *
-     * @throws ValidationException
+     * @return Generator<TypeRules\InternalType>
      */
-    private function getTypeRuleFromReflectionProperty(Property $property, ReflectionUnionType|ReflectionIntersectionType $propertyType): TypeRules\InternalType
+    private function getTypeRuleFromReflectionProperty(ReflectionUnionType|ReflectionIntersectionType $propertyType): Generator
     {
         $rules = [];
         $mapping = [];
@@ -74,10 +72,10 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
         }
 
         if (! $rules) {
-            throw new ValidationException("Missing rules for {$property->getName()}");
+            return;
         }
 
-        return is_a($propertyType, ReflectionUnionType::class) ? new TypeRules\Union($mapping, ...$rules) : new TypeRules\Intersection($mapping, ...$rules);
+        yield is_a($propertyType, ReflectionUnionType::class) ? new TypeRules\Union($mapping, ...$rules) : new TypeRules\Intersection($mapping, ...$rules);
     }
 
     /**
