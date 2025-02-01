@@ -8,7 +8,7 @@ namespace Attributes\Validation\Transformers\Types;
 
 use Attributes\Validation\Exceptions\TransformException;
 use DateTime as BaseDateTime;
-use Exception;
+use Throwable;
 
 class DateTime implements TypeCast
 {
@@ -25,7 +25,7 @@ class DateTime implements TypeCast
     {
         try {
             return new BaseDateTime($value);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             throw new TransformException('Invalid datetime', previous: $e);
         }
     }

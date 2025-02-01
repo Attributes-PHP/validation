@@ -7,7 +7,7 @@
 namespace Attributes\Validation\Transformers\Types;
 
 use Attributes\Validation\Exceptions\TransformException;
-use Exception;
+use Throwable;
 
 class RawString implements TypeCast
 {
@@ -28,7 +28,7 @@ class RawString implements TypeCast
 
         try {
             return (string) $value;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             throw new TransformException('Invalid string', previous: $e);
         }
     }

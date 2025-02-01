@@ -26,7 +26,7 @@ class StrictType implements TypeCast
      *
      * @throws TransformException
      */
-    public function cast(mixed $value, bool $strict): string
+    public function cast(mixed $value, bool $strict): mixed
     {
         return is_a($value, $this->type) ? $value : throw new TransformException("Invalid $this->type");
     }

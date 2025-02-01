@@ -20,7 +20,7 @@ class Union extends InternalType
             'failed' => $numExceptions,
             'passed' => $numRules - $numExceptions,
         ];
-        if (! empty($exceptions)) {
+        if ($numRules <= $numExceptions) {
             /** @var AllOfException $allOfException */
             $allOfException = $this->reportError($input, $summary);
             $allOfException->addChildren($exceptions);

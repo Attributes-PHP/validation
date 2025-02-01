@@ -7,7 +7,7 @@
 namespace Attributes\Validation\Transformers\Types;
 
 use Attributes\Validation\Exceptions\TransformException;
-use Exception;
+use Throwable;
 
 class Integer implements TypeCast
 {
@@ -28,7 +28,7 @@ class Integer implements TypeCast
 
         try {
             return $value + 0;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             throw new TransformException('Invalid integer', previous: $e);
         }
     }

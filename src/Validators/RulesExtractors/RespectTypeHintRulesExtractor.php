@@ -18,9 +18,9 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
 {
     private array $typeHintRules;
 
-    public function __construct(?array $typeHintRules = null, bool $strict = false)
+    public function __construct(array $typeHintRules = [], bool $strict = false)
     {
-        $this->typeHintRules = $typeHintRules ?? $this->getDefaultRules($strict);
+        $this->typeHintRules = array_merge($this->getDefaultRules($strict), $typeHintRules);
     }
 
     /**
@@ -40,10 +40,8 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
 
         $propertyType = $reflectionProperty->getType();
         if ($propertyType instanceof ReflectionNamedType) {
-            if (! isset($this->typeHintRules[$propertyType->getName()])) {
-                return;
-            }
-            yield $this->typeHintRules[$propertyType->getName()];
+            $typeName = isset($this->typeHintRules[$propertyType->getName()]) ? $propertyType->getName() : 'object';
+            yield $this->typeHintRules[$typeName];
         } elseif ($propertyType instanceof ReflectionUnionType || $propertyType instanceof ReflectionIntersectionType) {
             yield from $this->getTypeRuleFromReflectionProperty($propertyType);
         } else {
@@ -62,17 +60,10 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
         $mapping = [];
 
         foreach ($propertyType->getTypes() as $type) {
-            if (! isset($this->typeHintRules[$type->getName()])) {
-                continue;
-            }
-
-            $rule = $this->typeHintRules[$type->getName()];
+            $typeHint = isset($this->typeHintRules[$type->getName()]) ? $type->getName() : 'object';
+            $rule = $this->typeHintRules[$typeHint];
             $rules[] = $rule;
             $mapping[$rule->getName()] = $type->getName();
-        }
-
-        if (! $rules) {
-            return;
         }
 
         yield is_a($propertyType, ReflectionUnionType::class) ? new TypeRules\Union($mapping, ...$rules) : new TypeRules\Intersection($mapping, ...$rules);
@@ -91,7 +82,7 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
                 'float' => new Rules\FloatType,
                 'string' => new Rules\StringType,
                 'array' => new Rules\ArrayType,
-                'object' => new Rules\ObjectType,
+                'object' => new Rules\AnyOf(new Rules\ObjectType, new Rules\ArrayType),
                 DateTime::class => new Rules\DateTime,
                 DateTimeInterface::class => new Rules\DateTime,
             ];
@@ -103,7 +94,7 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
             'float' => new Rules\FloatVal,
             'string' => new Rules\StringVal,
             'array' => new Rules\ArrayVal,
-            'object' => new Rules\ObjectType,
+            'object' => new Rules\AnyOf(new Rules\ObjectType, new Rules\ArrayVal),
             DateTime::class => new Rules\DateTime,
             DateTimeInterface::class => new Rules\DateTime,
         ];
