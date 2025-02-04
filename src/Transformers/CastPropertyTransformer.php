@@ -108,9 +108,9 @@ class CastPropertyTransformer implements PropertyTransformer
     {
         return [
             // Builtins
-            'bool' => Types\Boolean::class,
-            'float' => Types\FloatingPoint::class,
-            'int' => Types\Integer::class,
+            'bool' => Types\RawBool::class,
+            'float' => Types\RawFloat::class,
+            'int' => Types\RawInt::class,
             'string' => Types\RawString::class,
             // Class builtins
             DateTime::class => Types\DateTime::class,

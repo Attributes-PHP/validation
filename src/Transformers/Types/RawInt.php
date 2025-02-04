@@ -9,7 +9,7 @@ namespace Attributes\Validation\Transformers\Types;
 use Attributes\Validation\Exceptions\TransformException;
 use Throwable;
 
-class Integer implements TypeCast
+class RawInt implements TypeCast
 {
     /**
      * Casts a given value into a given type

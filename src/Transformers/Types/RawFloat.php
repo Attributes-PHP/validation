@@ -7,8 +7,9 @@
 namespace Attributes\Validation\Transformers\Types;
 
 use Attributes\Validation\Exceptions\TransformException;
+use Throwable;
 
-class Boolean implements TypeCast
+class RawFloat implements TypeCast
 {
     /**
      * Casts a given value into a given type
@@ -17,19 +18,18 @@ class Boolean implements TypeCast
      * @param  bool  $strict  - Determines if a strict casting should be applied. True for strict casting or else otherwise
      * @return mixed - Value properly cast
      *
-     * @throws TransformException - If unable to
+     * @throws TransformException
      */
-    public function cast(mixed $value, bool $strict): bool
+    public function cast(mixed $value, bool $strict): mixed
     {
         if ($strict) {
-            return is_bool($value) ? $value : throw new TransformException('Invalid boolean');
+            return is_float($value) ? $value : throw new TransformException('Invalid floating point');
         }
 
-        $filteredValue = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-        if ($filteredValue === null) {
-            throw new TransformException('Invalid boolean');
+        try {
+            return $value + 0;
+        } catch (Throwable $e) {
+            throw new TransformException('Invalid floating point', previous: $e);
         }
-
-        return $filteredValue;
     }
 }

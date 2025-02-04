@@ -5,22 +5,25 @@ namespace Attributes\Validation\Validators\RulesExtractors;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Property;
 use Attributes\Validation\Validators\Rules as TypeRules;
+use Attributes\Validation\Validators\RulesExtractors\Types as TypeExtractors;
 use DateTime;
 use DateTimeInterface;
 use Generator;
 use ReflectionIntersectionType;
 use ReflectionNamedType;
 use ReflectionUnionType;
-use Respect\Validation\Rules as Rules;
 use Respect\Validation\Rules\Core\Simple;
 
 class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
 {
     private array $typeHintRules;
 
+    private bool $strict;
+
     public function __construct(array $typeHintRules = [], bool $strict = false)
     {
-        $this->typeHintRules = array_merge($this->getDefaultRules($strict), $typeHintRules);
+        $this->strict = $strict;
+        $this->typeHintRules = array_merge($this->getDefaultRules(), $typeHintRules);
     }
 
     /**
@@ -40,8 +43,9 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
 
         $propertyType = $reflectionProperty->getType();
         if ($propertyType instanceof ReflectionNamedType) {
-            $typeName = isset($this->typeHintRules[$propertyType->getName()]) ? $propertyType->getName() : 'object';
-            yield $this->typeHintRules[$typeName];
+            $typeHintName = $propertyType->getName();
+            $typeName = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'default';
+            yield $this->typeHintRules[$typeName]->extract($this->strict, $typeHintName);
         } elseif ($propertyType instanceof ReflectionUnionType || $propertyType instanceof ReflectionIntersectionType) {
             yield from $this->getTypeRuleFromReflectionProperty($propertyType);
         } else {
@@ -60,8 +64,9 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
         $mapping = [];
 
         foreach ($propertyType->getTypes() as $type) {
-            $typeHint = isset($this->typeHintRules[$type->getName()]) ? $type->getName() : 'object';
-            $rule = $this->typeHintRules[$typeHint];
+            $typeHintName = $type->getName();
+            $typeHint = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'default';
+            $rule = $this->typeHintRules[$typeHint]->extract($this->strict, $typeHintName);
             $rules[] = $rule;
             $mapping[$rule->getName()] = $type->getName();
         }
@@ -70,33 +75,20 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
     }
 
     /**
-     * Retrieves default type hint rules. If strict, retrieves strict type checking otherwise
-     * does a loose check.
+     * Retrieves default type hint rules extractors according to their type hint
      */
-    private function getDefaultRules(bool $strict): array
+    private function getDefaultRules(): array
     {
-        if ($strict) {
-            return [
-                'bool' => new Rules\BoolType,
-                'int' => new Rules\IntType,
-                'float' => new Rules\FloatType,
-                'string' => new Rules\StringType,
-                'array' => new Rules\ArrayType,
-                'object' => new Rules\AnyOf(new Rules\ObjectType, new Rules\ArrayType),
-                DateTime::class => new Rules\DateTime,
-                DateTimeInterface::class => new Rules\DateTime,
-            ];
-        }
-
         return [
-            'bool' => new Rules\BoolVal,
-            'int' => new Rules\IntVal,
-            'float' => new Rules\FloatVal,
-            'string' => new Rules\StringVal,
-            'array' => new Rules\ArrayVal,
-            'object' => new Rules\AnyOf(new Rules\ObjectType, new Rules\ArrayVal),
-            DateTime::class => new Rules\DateTime,
-            DateTimeInterface::class => new Rules\DateTime,
+            'bool' => new TypeExtractors\RawBool,
+            'int' => new TypeExtractors\RawInt,
+            'float' => new TypeExtractors\RawFloat,
+            'string' => new TypeExtractors\RawString,
+            'array' => new TypeExtractors\RawArray,
+            'object' => new TypeExtractors\RawObject,
+            DateTime::class => new TypeExtractors\DateTime,
+            DateTimeInterface::class => new TypeExtractors\DateTime,
+            'default' => new TypeExtractors\AnyClass,
         ];
     }
 }

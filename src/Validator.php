@@ -30,12 +30,12 @@ class Validator implements Validatable
      * Validates a given data according to a given model
      *
      * @param  array  $data  - Data to validate
-     * @param  BaseModel  $model  - Model to validate against
-     * @return BaseModel - Model populated with the validated data
+     * @param  object  $model  - Model to validate against
+     * @return object - Model populated with the validated data
      *
      * @throws ValidationException - If validation fails
      */
-    public function validate(array $data, BaseModel $model): BaseModel
+    public function validate(array $data, object $model): object
     {
         if (! $data) {
             throw new ValidationException('No data to validate');
