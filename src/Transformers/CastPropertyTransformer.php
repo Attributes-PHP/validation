@@ -10,7 +10,7 @@ use DateTimeInterface;
 use Exception;
 use ReflectionNamedType;
 
-class CastPropertyTransformer implements PropertyTransformer
+class CastPropertyTransformer implements CastContainer, PropertyTransformer
 {
     private array $mappings;
 
@@ -70,15 +70,8 @@ class CastPropertyTransformer implements PropertyTransformer
     protected function castValue(ReflectionNamedType $propertyType, mixed $value): mixed
     {
         $propertyTypeName = $propertyType->getName();
-        $castClass = $this->mappings[$propertyTypeName] ?? $this->getParentTypeClass($propertyTypeName, $value);
-        if (! is_subclass_of($castClass, Types\TypeCast::class)) {
-            $expectedClass = Types\TypeCast::class;
-            throw new TransformException("Unable to cast '$propertyTypeName'. Expected '$castClass' to implement $expectedClass");
-        }
-
+        $cast = $this->getTypeCastInstance($propertyType);
         try {
-            $cast = $castClass === Types\StrictType::class ? new $castClass($propertyTypeName) : new $castClass;
-
             return $cast->cast($value, $this->strict);
         } catch (TransformException $error) {
             throw $error;
@@ -87,7 +80,10 @@ class CastPropertyTransformer implements PropertyTransformer
         }
     }
 
-    private function getParentTypeClass(string $propertyTypeName): ?string
+    /**
+     * @throws TransformException
+     */
+    private function getParentTypeClass(string $propertyTypeName): string
     {
         if (! class_exists($propertyTypeName)) {
             throw new TransformException("Unsupported cast of '{$propertyTypeName}' property type");
@@ -101,7 +97,7 @@ class CastPropertyTransformer implements PropertyTransformer
             }
         }
 
-        return $this->mappings['default'];
+        return $this->mappings['AnyClass'];
     }
 
     protected function getDefaultMappings(): array
@@ -116,7 +112,7 @@ class CastPropertyTransformer implements PropertyTransformer
             DateTime::class => Types\DateTime::class,
             DateTimeInterface::class => Types\DateTime::class,
             // Default casting
-            'default' => Types\StrictType::class,
+            'AnyClass' => Types\AnyClass::class,
         ];
     }
 
@@ -125,5 +121,19 @@ class CastPropertyTransformer implements PropertyTransformer
         return [
             DateTimeInterface::class,
         ];
+    }
+
+    /**
+     * @throws TransformException
+     */
+    public function getTypeCastInstance(string $propertyTypeName): Types\TypeCast
+    {
+        $castClass = $this->mappings[$propertyTypeName] ?? $this->getParentTypeClass($propertyTypeName);
+        if (! is_subclass_of($castClass, Types\TypeCast::class)) {
+            $expectedClass = Types\TypeCast::class;
+            throw new TransformException("Unable to cast '$propertyTypeName'. Expected '$castClass' to implement $expectedClass");
+        }
+
+        return $castClass === Types\AnyClass::class ? new $castClass($propertyTypeName, $this) : new $castClass;
     }
 }

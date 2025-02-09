@@ -14,7 +14,7 @@ use ReflectionNamedType;
 use ReflectionUnionType;
 use Respect\Validation\Rules\Core\Simple;
 
-class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
+class RespectTypeHintRulesExtractor implements PropertyRulesExtractor, RulesContainer
 {
     private array $typeHintRules;
 
@@ -44,7 +44,7 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
         $propertyType = $reflectionProperty->getType();
         if ($propertyType instanceof ReflectionNamedType) {
             $typeHintName = $propertyType->getName();
-            $typeName = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'default';
+            $typeName = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'AnyClass';
             yield $this->typeHintRules[$typeName]->extract($this->strict, $typeHintName);
         } elseif ($propertyType instanceof ReflectionUnionType || $propertyType instanceof ReflectionIntersectionType) {
             yield from $this->getTypeRuleFromReflectionProperty($propertyType);
@@ -65,7 +65,7 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
 
         foreach ($propertyType->getTypes() as $type) {
             $typeHintName = $type->getName();
-            $typeHint = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'default';
+            $typeHint = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'AnyClass';
             $rule = $this->typeHintRules[$typeHint]->extract($this->strict, $typeHintName);
             $rules[] = $rule;
             $mapping[$rule->getName()] = $type->getName();
@@ -77,7 +77,7 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
     /**
      * Retrieves default type hint rules extractors according to their type hint
      */
-    private function getDefaultRules(): array
+    public function getDefaultRules(): array
     {
         return [
             'bool' => new TypeExtractors\RawBool,
@@ -88,7 +88,12 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
             'object' => new TypeExtractors\RawObject,
             DateTime::class => new TypeExtractors\DateTime,
             DateTimeInterface::class => new TypeExtractors\DateTime,
-            'default' => new TypeExtractors\AnyClass,
+            'AnyClass' => new TypeExtractors\AnyClass($this),
         ];
+    }
+
+    public function getRules(): array
+    {
+        return $this->typeHintRules;
     }
 }
