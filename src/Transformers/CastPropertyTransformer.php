@@ -18,11 +18,14 @@ class CastPropertyTransformer implements PropertyTransformer
 
     private bool $strict;
 
-    public function __construct(array $mappings = [], array $parentMappings = [], bool $strict = false)
+    private bool $stopFirstError;
+
+    public function __construct(array $mappings = [], array $parentMappings = [], bool $strict = false, bool $stopFirstError = true)
     {
         $this->mappings = array_merge($this->getDefaultMappings(), $mappings);
         $this->parentMappings = array_merge($this->getDefaultParentMappings(), $parentMappings);
         $this->strict = $strict;
+        $this->stopFirstError = $stopFirstError;
     }
 
     /**
@@ -139,6 +142,6 @@ class CastPropertyTransformer implements PropertyTransformer
             throw new TransformException("Unable to cast '$propertyTypeName'. Expected '$castClass' to implement $expectedClass");
         }
 
-        return $castClass === Types\AnyClass::class ? new $castClass($propertyTypeName, $this) : new $castClass;
+        return $castClass === Types\AnyClass::class ? new $castClass($propertyTypeName, $this, $this->stopFirstError) : new $castClass;
     }
 }

@@ -2,22 +2,22 @@
 
 namespace Attributes\Validation\Exceptions;
 
-use Attributes\Validation\ValidationResult;
+use Attributes\Validation\ErrorInfo;
 use Exception;
 use Throwable;
 
 abstract class BaseException extends Exception
 {
-    private ?ValidationResult $validationResult;
+    private ?ErrorInfo $result;
 
-    public function __construct(string $message, ?ValidationResult $result = null, ?Throwable $previous = null)
+    public function __construct(string $message, ?ErrorInfo $result = null, ?Throwable $previous = null)
     {
-        $this->validationResult = $result;
+        $this->result = $result;
         parent::__construct($message, 0, $previous);
     }
 
-    public function getValidationResult(): ?ValidationResult
+    public function getInfo(): ?ErrorInfo
     {
-        return $this->validationResult;
+        return $this->result;
     }
 }

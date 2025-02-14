@@ -2,6 +2,7 @@
 
 namespace Attributes\Validation\Validators;
 
+use Attributes\Validation\ErrorInfo;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Property;
 use Attributes\Validation\ValidationResult;
@@ -38,7 +39,7 @@ class RespectPropertyValidator implements PropertyValidator
      */
     public function validate(Property $property): void
     {
-        $validationResult = new ValidationResult;
+        $errorInfo = new ErrorInfo;
         foreach ($this->extractor->getRulesFromProperty($property) as $rule) {
             try {
                 $rule->assert($property->getValue());
@@ -46,13 +47,13 @@ class RespectPropertyValidator implements PropertyValidator
                     $property->addTypeHintSuggestions($rule->getValidTypeHints());
                 }
             } catch (RespectValidationException $error) {
-                $validationResult->addError($error, $property->getName());
+                $errorInfo->addError($error, $property->getName());
             }
         }
 
-        if ($validationResult->hasErrors()) {
+        if ($errorInfo->hasErrors()) {
             $propertyName = $property->getName();
-            throw new ValidationException("Invalid property '$propertyName'", $validationResult);
+            throw new ValidationException("Invalid property '$propertyName'", $errorInfo);
         }
     }
 }

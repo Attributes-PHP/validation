@@ -1,10 +1,31 @@
 <?php
 
+/**
+ * Holds logic for nested error logic
+ *
+ * ```php
+ * class Profile {
+ *     private string $name;
+ *     private int $age;
+ * }
+ * class User {
+ *     private Profile $profile;
+ * }
+ *
+ * // Output of getErrors()
+ * [
+ *      'profile' => [
+ *          'age' => 'Invalid age',
+ *      ]
+ * ]
+ * ```
+ */
+
 namespace Attributes\Validation;
 
 use Exception;
 
-class ValidationResult
+class ErrorInfo
 {
     private array $errors = [];
 

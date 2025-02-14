@@ -6,6 +6,7 @@
 
 namespace Attributes\Validation\Transformers\Types;
 
+use Attributes\Validation\ErrorInfo;
 use Attributes\Validation\Exceptions\TransformException;
 use Attributes\Validation\Property;
 use Attributes\Validation\Transformers\PropertyTransformer;
@@ -18,10 +19,13 @@ class AnyClass implements TypeCast
 
     private PropertyTransformer $propertyTransformer;
 
-    public function __construct(string $type, PropertyTransformer $propertyTransformer)
+    private bool $stopFirstError;
+
+    public function __construct(string $type, PropertyTransformer $propertyTransformer, bool $stopFirstError)
     {
         $this->type = $type;
         $this->propertyTransformer = $propertyTransformer;
+        $this->stopFirstError = $stopFirstError;
     }
 
     /**
@@ -50,11 +54,23 @@ class AnyClass implements TypeCast
 
         $class = new $this->type;
         $reflectionClass = new ReflectionClass($class);
+        $errorInfo = new ErrorInfo;
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $propertyName = $reflectionProperty->getName();
             $property = new Property($reflectionProperty, $value[$propertyName]);
-            $propertyValue = $this->propertyTransformer->transform($property);
-            $reflectionProperty->setValue($class, $propertyValue);
+            try {
+                $propertyValue = $this->propertyTransformer->transform($property);
+                $reflectionProperty->setValue($class, $propertyValue);
+            } catch (TransformException $error) {
+                $errorInfo->addError($error, $propertyName);
+                if ($this->stopFirstError) {
+                    throw new TransformException("Unable to cast '$this->type'", $errorInfo, $error);
+                }
+            }
+        }
+
+        if ($errorInfo->hasErrors()) {
+            throw new TransformException("Unable to cast '$this->type'", $errorInfo);
         }
 
         return $class;

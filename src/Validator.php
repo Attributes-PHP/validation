@@ -17,13 +17,13 @@ class Validator implements Validatable
 
     private PropertyValidator $validator;
 
-    private bool $stopAtFirstError;
+    private bool $stopFirstError;
 
-    public function __construct(?PropertyValidator $validator = null, ?PropertyTransformer $transformer = null, bool $stopAtFirstError = false, bool $strict = false)
+    public function __construct(?PropertyValidator $validator = null, ?PropertyTransformer $transformer = null, bool $stopFirstError = false, bool $strict = false)
     {
         $this->validator = $validator ?? new RespectPropertyValidator(strict: $strict);
-        $this->transformer = $transformer ?? new CastPropertyTransformer(strict: $strict);
-        $this->stopAtFirstError = $stopAtFirstError;
+        $this->transformer = $transformer ?? new CastPropertyTransformer(strict: $strict, stopFirstError: $stopFirstError);
+        $this->stopFirstError = $stopFirstError;
     }
 
     /**
@@ -43,15 +43,15 @@ class Validator implements Validatable
 
         $validModel = clone $model;
         $reflectionClass = new ReflectionClass($validModel);
-        $validationResult = new ValidationResult;
+        $errorInfo = new ErrorInfo;
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $propertyName = $reflectionProperty->getName();
 
             if (! array_key_exists($propertyName, $data)) {
                 if (! $reflectionProperty->isInitialized($model)) {
-                    $validationResult->addErrorMessage("Missing required property '$propertyName'", $propertyName);
-                    if ($this->stopAtFirstError) {
-                        throw new ValidationException('Validation failed', $validationResult);
+                    $errorInfo->addErrorMessage("Missing required property '$propertyName'", $propertyName);
+                    if ($this->stopFirstError) {
+                        throw new ValidationException('Validation failed', $errorInfo);
                     }
                 }
 
@@ -65,17 +65,17 @@ class Validator implements Validatable
                 $value = $this->transformer->transform($property);
                 $reflectionProperty->setValue($validModel, $value);
             } catch (BaseException $error) {
-                $validationResult->addError($error, $propertyName);
-                if ($this->stopAtFirstError) {
-                    throw new ValidationException('Invalid data', $validationResult, previous: $error);
+                $errorInfo->addError($error, $propertyName);
+                if ($this->stopFirstError) {
+                    throw new ValidationException('Invalid data', $errorInfo, previous: $error);
                 }
             } catch (ReflectionException $error) {
                 throw new ValidationException('Invalid base model property attributes', previous: $error);
             }
         }
 
-        if ($validationResult->hasErrors()) {
-            throw new ValidationException('Invalid data', $validationResult);
+        if ($errorInfo->hasErrors()) {
+            throw new ValidationException('Invalid data', $errorInfo);
         }
 
         return $validModel;
