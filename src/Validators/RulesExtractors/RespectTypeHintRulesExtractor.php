@@ -44,7 +44,8 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor, RulesCont
         $propertyType = $reflectionProperty->getType();
         if ($propertyType instanceof ReflectionNamedType) {
             $typeHintName = $propertyType->getName();
-            $typeName = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'AnyClass';
+            $typeName = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'default';
+            $typeName = $propertyType->allowsNull() ? 'null' : $typeName;
             yield $this->typeHintRules[$typeName]->extract($this->strict, $typeHintName);
         } elseif ($propertyType instanceof ReflectionUnionType || $propertyType instanceof ReflectionIntersectionType) {
             yield from $this->getTypeRuleFromReflectionProperty($propertyType);
@@ -65,7 +66,8 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor, RulesCont
 
         foreach ($propertyType->getTypes() as $type) {
             $typeHintName = $type->getName();
-            $typeHint = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'AnyClass';
+            $typeHint = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'default';
+            $typeHint = $type->allowsNull() ? 'null' : $typeHint;
             $rule = $this->typeHintRules[$typeHint]->extract($this->strict, $typeHintName);
             $rules[] = $rule;
             $mapping[$rule->getName()] = $type->getName();
@@ -86,9 +88,10 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor, RulesCont
             'string' => new TypeExtractors\RawString,
             'array' => new TypeExtractors\RawArray,
             'object' => new TypeExtractors\RawObject,
+            'null' => new TypeExtractors\RawNull($this),
             DateTime::class => new TypeExtractors\DateTime,
             DateTimeInterface::class => new TypeExtractors\DateTime,
-            'AnyClass' => new TypeExtractors\AnyClass($this),
+            'default' => new TypeExtractors\AnyClass($this),
         ];
     }
 

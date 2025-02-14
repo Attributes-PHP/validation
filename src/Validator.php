@@ -47,7 +47,7 @@ class Validator implements Validatable
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $propertyName = $reflectionProperty->getName();
 
-            if (! isset($data[$propertyName])) {
+            if (! array_key_exists($propertyName, $data)) {
                 if (! $reflectionProperty->isInitialized($model)) {
                     $validationResult->addErrorMessage("Missing required property '$propertyName'", $propertyName);
                     if ($this->stopAtFirstError) {

@@ -70,7 +70,11 @@ class CastPropertyTransformer implements CastContainer, PropertyTransformer
     protected function castValue(ReflectionNamedType $propertyType, mixed $value): mixed
     {
         $propertyTypeName = $propertyType->getName();
-        $cast = $this->getTypeCastInstance($propertyType);
+        $cast = $this->getTypeCastInstance($propertyTypeName);
+        if ($propertyType->allowsNull()) {
+            $cast = new $this->mappings['null']($cast);
+        }
+
         try {
             return $cast->cast($value, $this->strict);
         } catch (TransformException $error) {
@@ -97,7 +101,7 @@ class CastPropertyTransformer implements CastContainer, PropertyTransformer
             }
         }
 
-        return $this->mappings['AnyClass'];
+        return $this->mappings['default'];
     }
 
     protected function getDefaultMappings(): array
@@ -108,11 +112,12 @@ class CastPropertyTransformer implements CastContainer, PropertyTransformer
             'float' => Types\RawFloat::class,
             'int' => Types\RawInt::class,
             'string' => Types\RawString::class,
+            'null' => Types\RawNull::class,
             // Class builtins
             DateTime::class => Types\DateTime::class,
             DateTimeInterface::class => Types\DateTime::class,
             // Default casting
-            'AnyClass' => Types\AnyClass::class,
+            'default' => Types\AnyClass::class,
         ];
     }
 
