@@ -10,7 +10,7 @@ use DateTimeInterface;
 use Exception;
 use ReflectionNamedType;
 
-class CastPropertyTransformer implements CastContainer, PropertyTransformer
+class CastPropertyTransformer implements PropertyTransformer
 {
     private array $mappings;
 

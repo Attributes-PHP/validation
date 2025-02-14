@@ -19,13 +19,12 @@ We aim to support versions that haven't reached their end-of-life.
 ```php
 <?php
 
-use Attributes\Validation\BaseModel;
 use Attributes\Validation\Validator;
 
-class Person extends BaseModel
+class Person
 {
     public float|int $age;
-    public DateTime $birthday;
+    public ?DateTime $birthday;
 }
 
 $rawData = [

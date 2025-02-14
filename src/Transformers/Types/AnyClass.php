@@ -7,23 +7,21 @@
 namespace Attributes\Validation\Transformers\Types;
 
 use Attributes\Validation\Exceptions\TransformException;
-use Attributes\Validation\Transformers\CastContainer;
+use Attributes\Validation\Property;
+use Attributes\Validation\Transformers\PropertyTransformer;
 use ReflectionClass;
 use ReflectionException;
-use ReflectionIntersectionType;
-use ReflectionNamedType;
-use ReflectionUnionType;
 
 class AnyClass implements TypeCast
 {
     private string $type;
 
-    private CastContainer $castContainer;
+    private PropertyTransformer $propertyTransformer;
 
-    public function __construct(string $type, CastContainer $castContainer)
+    public function __construct(string $type, PropertyTransformer $propertyTransformer)
     {
         $this->type = $type;
-        $this->castContainer = $castContainer;
+        $this->propertyTransformer = $propertyTransformer;
     }
 
     /**
@@ -52,58 +50,13 @@ class AnyClass implements TypeCast
 
         $class = new $this->type;
         $reflectionClass = new ReflectionClass($class);
-        foreach ($reflectionClass->getProperties() as $property) {
-            $propertyName = $property->getName();
-
-            if (! isset($value[$propertyName])) {
-                continue;
-            }
-
-            $propertyValue = $value[$propertyName];
-            if (! $property->hasType()) {
-                $property->setValue($class, $propertyValue);
-
-                continue;
-            }
-
-            $propertyType = $property->getType();
-            if ($propertyType instanceof ReflectionNamedType) {
-                $propertyValue = $this->castValue($propertyType, $strict, $propertyValue);
-            } elseif ($propertyType instanceof ReflectionUnionType || $propertyType instanceof ReflectionIntersectionType) {
-                $propertyValue = $this->castUnionOrIntersectionValue($propertyType, $strict, $propertyValue);
-            } else {
-                throw new TransformException("Unsupported reflection type {$propertyType->getName()}");
-            }
-
-            $property->setValue($class, $propertyValue);
+        foreach ($reflectionClass->getProperties() as $reflectionProperty) {
+            $propertyName = $reflectionProperty->getName();
+            $property = new Property($reflectionProperty, $value[$propertyName]);
+            $propertyValue = $this->propertyTransformer->transform($property);
+            $reflectionProperty->setValue($class, $propertyValue);
         }
 
         return $class;
-    }
-
-    /**
-     * @throws TransformException
-     */
-    private function castUnionOrIntersectionValue(ReflectionUnionType|ReflectionIntersectionType $propertyType, bool $strict, mixed $propertyValue): TypeCast
-    {
-        foreach ($propertyType->getTypes() as $type) {
-            try {
-                return $this->castValue($type, $strict, $propertyValue);
-            } catch (TransformException $exception) {
-            }
-        }
-
-        throw new TransformException('Unable to cast Union or Intersection');
-    }
-
-    /**
-     * @throws TransformException
-     */
-    private function castValue(ReflectionNamedType $propertyType, bool $strict, mixed $propertyValue): mixed
-    {
-        $propertyTypeName = $propertyType->getName();
-        $cast = $this->castContainer->getTypeCastInstance($propertyTypeName);
-
-        return $cast->cast($propertyValue, $strict);
     }
 }
