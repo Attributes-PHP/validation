@@ -37,10 +37,6 @@ class Validator implements Validatable
      */
     public function validate(array $data, object $model): object
     {
-        if (! $data) {
-            throw new ValidationException('No data to validate');
-        }
-
         $validModel = clone $model;
         $reflectionClass = new ReflectionClass($validModel);
         $errorInfo = new ErrorInfo;
@@ -65,7 +61,7 @@ class Validator implements Validatable
                 $value = $this->transformer->transform($property);
                 $reflectionProperty->setValue($validModel, $value);
             } catch (BaseException $error) {
-                $errorInfo->addError($error, $propertyName);
+                $errorInfo->addError($error);
                 if ($this->stopFirstError) {
                     throw new ValidationException('Invalid data', $errorInfo, previous: $error);
                 }

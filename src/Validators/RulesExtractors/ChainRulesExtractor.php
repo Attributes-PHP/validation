@@ -27,4 +27,9 @@ class ChainRulesExtractor implements PropertyRulesExtractor
             }
         }
     }
+
+    public function add(PropertyRulesExtractor $rulesExtractor): void
+    {
+        $this->rulesExtractors[] = $rulesExtractor;
+    }
 }

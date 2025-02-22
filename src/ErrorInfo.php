@@ -23,15 +23,26 @@
 
 namespace Attributes\Validation;
 
-use Exception;
+use Attributes\Validation\Exceptions\BaseException;
 
 class ErrorInfo
 {
+    private ?string $propertyName;
+
     private array $errors = [];
+
+    public function __construct(?string $propertyName = null)
+    {
+        $this->propertyName = $propertyName;
+    }
 
     public function getErrors(): array
     {
-        return $this->errors;
+        if (is_null($this->propertyName)) {
+            return $this->errors;
+        }
+
+        return [$this->propertyName => $this->errors];
     }
 
     public function hasErrors(): bool
@@ -42,22 +53,41 @@ class ErrorInfo
     /**
      * Adds a validation error
      *
-     * @param  Exception  $error  - The validation error
-     * @param  string  $propertyName  - The property in question
+     * @param  BaseException  $error  - The validation error
+     * @param  ?string  $propertyName  - The property in question
      */
-    public function addError(Exception $error, string $propertyName): void
+    public function addError(BaseException $error, ?string $propertyName = null): void
     {
-        $this->addErrorMessage($error->getMessage(), $propertyName);
+        $info = $error->getInfo();
+        if (is_null($info) || ! $info->hasErrors()) {
+            $this->addErrorMessage($error->getMessage(), $propertyName);
+
+            return;
+        }
+
+        if (is_null($propertyName)) {
+            $this->errors = array_merge($info->getErrors(), $this->errors);
+
+            return;
+        }
+
+        $this->errors[$propertyName] = array_merge($info->getErrors(), $this->errors[$propertyName] ?? []);
     }
 
     /**
      * Adds a validation error message
      *
      * @param  string  $error  - The validation error
-     * @param  string  $propertyName  - The property in question
+     * @param  ?string  $propertyName  - The property in question
      */
-    public function addErrorMessage(string $error, string $propertyName): void
+    public function addErrorMessage(string $error, ?string $propertyName = null): void
     {
+        if (is_null($propertyName)) {
+            $this->errors[] = $error;
+
+            return;
+        }
+
         if (! isset($this->errors[$propertyName])) {
             $this->errors[$propertyName] = [];
         }

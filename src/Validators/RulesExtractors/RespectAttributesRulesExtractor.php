@@ -5,7 +5,7 @@ namespace Attributes\Validation\Validators\RulesExtractors;
 use Attributes\Validation\Property;
 use Generator;
 use ReflectionClass;
-use Respect\Validation\Rules as Rules;
+use Respect\Validation\Validatable;
 
 class RespectAttributesRulesExtractor implements PropertyRulesExtractor
 {
@@ -23,7 +23,7 @@ class RespectAttributesRulesExtractor implements PropertyRulesExtractor
         }
 
         foreach ($allAttributes as $attribute) {
-            if (! is_subclass_of($attribute->getName(), Rules\Core\Simple::class)) {
+            if (! is_subclass_of($attribute->getName(), Validatable::class)) {
                 continue;
             }
 
