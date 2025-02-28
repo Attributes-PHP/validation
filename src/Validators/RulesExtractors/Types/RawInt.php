@@ -19,6 +19,6 @@ class RawInt implements TypeRespectExtractor
      */
     public function extract(bool $strict, string $typeHint): Validatable
     {
-        return $strict ? new Rules\IntType : new Rules\IntVal;
+        return $strict ? new Rules\IntType : new Rules\NumericVal;
     }
 }

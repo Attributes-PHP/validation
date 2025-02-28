@@ -116,6 +116,8 @@ class CastPropertyTransformer implements PropertyTransformer
             'int' => Types\RawInt::class,
             'string' => Types\RawString::class,
             'null' => Types\RawNull::class,
+            'array' => Types\RawArray::class,
+            'object' => Types\RawObject::class,
             // Class builtins
             DateTime::class => Types\DateTime::class,
             DateTimeInterface::class => Types\DateTime::class,
