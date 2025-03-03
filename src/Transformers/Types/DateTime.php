@@ -8,6 +8,7 @@ namespace Attributes\Validation\Transformers\Types;
 
 use Attributes\Validation\Exceptions\TransformException;
 use DateTime as BaseDateTime;
+use DateTimeInterface;
 use Throwable;
 
 class DateTime implements TypeCast
@@ -23,6 +24,10 @@ class DateTime implements TypeCast
      */
     public function cast(mixed $value, bool $strict): BaseDateTime
     {
+        if ($value instanceof DateTimeInterface) {
+            return $value;
+        }
+
         try {
             return new BaseDateTime($value);
         } catch (Throwable $e) {
