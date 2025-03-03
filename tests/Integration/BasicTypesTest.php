@@ -41,13 +41,13 @@ test('Using default optional value', function (object $instance) {
 
 // String validation
 
-test('String type', function () {
+test('String type', function ($value) {
     $validator = new Validator;
-    $model = $validator->validate(['value' => 'My value'], new Models\Str);
+    $model = $validator->validate(['value' => $value], new Models\Str);
     expect($model)
         ->toBeInstanceOf(Models\Str::class)
-        ->toHaveProperty('value', 'My value');
-})->group('validator', 'basic', 'string');
+        ->toHaveProperty('value', strval($value));
+})->with('string')->group('validator', 'basic', 'string');
 
 test('Nullable string type', function (?string $value) {
     $validator = new Validator;
@@ -81,7 +81,7 @@ test('Integer type', function ($value) {
     expect($model)
         ->toBeInstanceOf(Models\Integer::class)
         ->toHaveProperty('value', (int) $value);
-})->with(['123', 123, 123.5])->group('validator', 'basic', 'integer');
+})->with('float')->group('validator', 'basic', 'integer');
 
 test('Optional integer type', function (?int $value) {
     $validator = new Validator;
@@ -115,7 +115,7 @@ test('Float type', function ($value) {
     expect($model)
         ->toBeInstanceOf(Models\FloatPoint::class)
         ->toHaveProperty('value', (float) $value);
-})->with(['123', 123, 123.5])->group('validator', 'basic', 'float');
+})->with('float')->group('validator', 'basic', 'float');
 
 test('Optional float type', function (?float $value) {
     $validator = new Validator;
@@ -149,7 +149,7 @@ test('Array type', function (array $value) {
     expect($model)
         ->toBeInstanceOf(Models\Arr::class)
         ->toHaveProperty('value', $value);
-})->with([[[123]], [['a' => 1, 'b' => 2]]])->group('validator', 'basic', 'array');
+})->with('array')->group('validator', 'basic', 'array');
 
 test('Optional array type', function (?array $value) {
     $validator = new Validator;
@@ -183,7 +183,7 @@ test('Object type', function (object|array $value) {
     expect($model)
         ->toBeInstanceOf(Models\Obj::class)
         ->toHaveProperty('value', (object) $value);
-})->with([[[123]], [['a' => 1, 'b' => 2]]])->group('validator', 'basic', 'object');
+})->with('object')->group('validator', 'basic', 'object');
 
 test('Optional object type', function (null|array|object $value) {
     $validator = new Validator;
@@ -217,7 +217,7 @@ test('Datetime type', function (string|DateTime $value) {
     expect($model)
         ->toBeInstanceOf(Models\DateTime::class)
         ->toHaveProperty('value', is_string($value) ? new DateTime($value) : $value);
-})->with(['2025-01-01 15:46:55', new DateTime])->group('validator', 'basic', 'datetime');
+})->with('datetime')->group('validator', 'basic', 'datetime');
 
 test('Optional datetime type', function (null|string|DateTime $value) {
     $validator = new Validator;
