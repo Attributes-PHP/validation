@@ -6,11 +6,19 @@
 
 namespace Attributes\Validation\Validators\RulesExtractors\Types;
 
+use DateTimeInterface;
 use Respect\Validation\Rules as Rules;
 use Respect\Validation\Validatable;
 
 class DateTime implements TypeRespectExtractor
 {
+    private string $format;
+
+    public function __construct(string $format = DateTimeInterface::ATOM)
+    {
+        $this->format = $format;
+    }
+
     /**
      * Retrieves the validation rules to check if a value is a valid datetime
      *
@@ -19,6 +27,6 @@ class DateTime implements TypeRespectExtractor
      */
     public function extract(bool $strict, string $typeHint): Validatable
     {
-        return new Rules\DateTime;
+        return new Rules\AnyOf(new Rules\DateTime(format: $this->format), new Rules\Instance(DateTimeInterface::class));
     }
 }

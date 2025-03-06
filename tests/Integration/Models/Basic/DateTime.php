@@ -20,7 +20,7 @@ class DefaultDateTime
 
     public function __construct()
     {
-        $this->value = new BaseDateTime('2025-01-01 00:00:00');
+        $this->value = new BaseDateTime('2025-03-06T08:57:06+00:00');
     }
 }
 

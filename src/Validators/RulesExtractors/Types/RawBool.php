@@ -19,6 +19,6 @@ class RawBool implements TypeRespectExtractor
      */
     public function extract(bool $strict, string $typeHint): Validatable
     {
-        return $strict ? new Rules\BoolType : new Rules\BoolVal;
+        return $strict ? new Rules\BoolType : new Rules\AllOf(new Rules\BoolVal, new Rules\NotOptional);
     }
 }

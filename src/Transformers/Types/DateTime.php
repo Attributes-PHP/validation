@@ -13,6 +13,13 @@ use Throwable;
 
 class DateTime implements TypeCast
 {
+    private string $format;
+
+    public function __construct(string $format = DateTimeInterface::ATOM)
+    {
+        $this->format = $format;
+    }
+
     /**
      * Casts a given value into a given type
      *
@@ -24,12 +31,16 @@ class DateTime implements TypeCast
      */
     public function cast(mixed $value, bool $strict): BaseDateTime
     {
-        if ($value instanceof DateTimeInterface) {
+        if ($value instanceof BaseDateTime) {
             return $value;
         }
 
         try {
-            return new BaseDateTime($value);
+            if ($value instanceof DateTimeInterface) {
+                return BaseDateTime::createFromInterface($value);
+            }
+
+            return BaseDateTime::createFromFormat($this->format, (string) $value);
         } catch (Throwable $e) {
             throw new TransformException('Invalid datetime', previous: $e);
         }

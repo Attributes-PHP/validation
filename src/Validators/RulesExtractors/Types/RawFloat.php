@@ -19,6 +19,6 @@ class RawFloat implements TypeRespectExtractor
      */
     public function extract(bool $strict, string $typeHint): Validatable
     {
-        return $strict ? new Rules\FloatType : new Rules\FloatVal;
+        return $strict ? new Rules\FloatType : new Rules\AllOf(new Rules\FloatVal, new Rules\Not(new Rules\BoolType));
     }
 }
