@@ -8,6 +8,7 @@ use Attributes\Validation\Transformers\Types as Types;
 use DateTime;
 use DateTimeInterface;
 use Exception;
+use ReflectionEnum;
 use ReflectionNamedType;
 
 class CastPropertyTransformer implements PropertyTransformer
@@ -116,6 +117,7 @@ class CastPropertyTransformer implements PropertyTransformer
             'int' => Types\RawInt::class,
             'string' => Types\RawString::class,
             'null' => Types\RawNull::class,
+            'enum' => Types\RawEnum::class,
             'array' => Types\RawArray::class,
             'object' => Types\RawObject::class,
             // Class builtins
@@ -138,6 +140,10 @@ class CastPropertyTransformer implements PropertyTransformer
      */
     public function getTypeCastInstance(string $propertyTypeName): Types\TypeCast
     {
+        if (enum_exists($propertyTypeName)) {
+            $propertyTypeName = 'enum';
+        }
+
         $castClass = $this->mappings[$propertyTypeName] ?? $this->getParentTypeClass($propertyTypeName);
         if (! is_subclass_of($castClass, Types\TypeCast::class)) {
             $expectedClass = Types\TypeCast::class;

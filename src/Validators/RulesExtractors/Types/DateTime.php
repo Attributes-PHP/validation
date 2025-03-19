@@ -6,27 +6,43 @@
 
 namespace Attributes\Validation\Validators\RulesExtractors\Types;
 
+use Attributes\Validation\Exceptions\ValidationException;
+use Attributes\Validation\Property;
+use Attributes\Validation\Validators\RulesExtractors\PropertiesContainer;
 use DateTimeInterface;
 use Respect\Validation\Rules as Rules;
 use Respect\Validation\Validatable;
 
 class DateTime implements TypeRespectExtractor
 {
-    private string $format;
-
-    public function __construct(string $format = DateTimeInterface::ATOM)
-    {
-        $this->format = $format;
-    }
-
     /**
      * Retrieves the validation rules to check if a value is a valid datetime
      *
      * @param  bool  $strict  - Determines if a strict validation rule should be applied. True for strict validation or else otherwise
-     * @param  string  $typeHint  - The exact type-hint. Useful for more complex ones e.g. classes
+     * @param  PropertiesContainer  $propertiesContainer  - Additional properties which could influence the validation rules. Optional 'format'
+     *
+     * @throws ValidationException
      */
-    public function extract(bool $strict, string $typeHint): Validatable
+    public function extract(bool $strict, PropertiesContainer $propertiesContainer): Validatable
     {
-        return new Rules\AnyOf(new Rules\DateTime(format: $this->format), new Rules\Instance(DateTimeInterface::class));
+        $format = $this->getFormat($propertiesContainer);
+
+        return new Rules\AnyOf(new Rules\DateTime(format: $format), new Rules\Instance(DateTimeInterface::class));
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function getFormat(PropertiesContainer $propertiesContainer): string
+    {
+        $property = $propertiesContainer->getProperty('property');
+        if (! ($property instanceof Property)) {
+            throw new ValidationException('Invalid property type');
+        }
+
+        $reflectionProperty = $property->getReflection();
+        $reflectionProperty->getAttributes();
+
+        return DateTimeInterface::ATOM;
     }
 }

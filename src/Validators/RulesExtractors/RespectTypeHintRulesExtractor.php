@@ -14,11 +14,13 @@ use ReflectionNamedType;
 use ReflectionUnionType;
 use Respect\Validation\Rules\Core\Simple;
 
-class RespectTypeHintRulesExtractor implements PropertyRulesExtractor, RulesContainer
+class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
 {
     private array $typeHintRules;
 
     private bool $strict;
+
+
 
     public function __construct(array $typeHintRules = [], bool $strict = false)
     {
@@ -43,10 +45,8 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor, RulesCont
 
         $propertyType = $reflectionProperty->getType();
         if ($propertyType instanceof ReflectionNamedType) {
-            $typeHintName = $propertyType->getName();
-            $typeName = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'default';
-            $typeName = $propertyType->allowsNull() ? 'null' : $typeName;
-            yield $this->typeHintRules[$typeName]->extract($this->strict, $typeHintName);
+            $typeExtractor = $this->getTypeExtractor($propertyType);
+            yield $typeExtractor->extract($this->strict, $propertyType->getName());
         } elseif ($propertyType instanceof ReflectionUnionType || $propertyType instanceof ReflectionIntersectionType) {
             yield $this->getTypeRuleFromReflectionProperty($propertyType);
         } else {
@@ -56,6 +56,7 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor, RulesCont
 
     /**
      * Retrieves the expected rule according to the given type
+     * @throws ValidationException
      */
     private function getTypeRuleFromReflectionProperty(ReflectionUnionType|ReflectionIntersectionType $propertyType): TypeRules\InternalType
     {
@@ -63,10 +64,8 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor, RulesCont
         $mapping = [];
 
         foreach ($propertyType->getTypes() as $type) {
-            $typeHintName = $type->getName();
-            $typeHint = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'default';
-            $typeHint = $type->allowsNull() ? 'null' : $typeHint;
-            $rule = $this->typeHintRules[$typeHint]->extract($this->strict, $typeHintName);
+            $typeExtractor = $this->getTypeExtractor($type);
+            $rule = $typeExtractor->extract($this->strict, $type->getName());
             $rules[] = $rule;
             $mapping[$rule->getName()] = $type->getName();
         }
@@ -86,10 +85,11 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor, RulesCont
             'string' => new TypeExtractors\RawString,
             'array' => new TypeExtractors\RawArray,
             'object' => new TypeExtractors\RawObject,
-            'null' => new TypeExtractors\RawNull($this),
+            'enum' => new TypeExtractors\RawEnum,
+            'null' => new TypeExtractors\RawNull,
             DateTime::class => new TypeExtractors\DateTime,
             DateTimeInterface::class => new TypeExtractors\DateTime,
-            'default' => new TypeExtractors\AnyClass($this),
+            'default' => new TypeExtractors\AnyClass,
         ];
     }
 
