@@ -6,8 +6,8 @@
 
 namespace Attributes\Validation\Validators\RulesExtractors\Types;
 
+use Attributes\Validation\Context;
 use Attributes\Validation\Exceptions\ValidationException;
-use Attributes\Validation\Validators\RulesExtractors\PropertiesContainer;
 use Respect\Validation\Rules as Rules;
 use Respect\Validation\Validatable;
 
@@ -16,19 +16,17 @@ class RawNull implements TypeRespectExtractor
     /**
      * Retrieves the validation rules to check if a value is null
      *
-     * @param  bool  $strict  - Determines if a strict validation rule should be applied. True for strict validation or else otherwise
-     * @param  PropertiesContainer  $propertiesContainer  - Additional properties which could influence the validation rules
+     * @param  Context  $context  - Validation context
      *
      * @throws ValidationException
      */
-    public function extract(bool $strict, PropertiesContainer $propertiesContainer): Validatable
+    public function extract(Context $context): Validatable
     {
-        $typeHint = $propertiesContainer->getProperty('typeHint');
-        $typeHintRulesExtractor = $propertiesContainer->getProperty('typeHintRulesExtractor');
-        $allRules = $typeHintRulesExtractor->getRules();
+        $typeHint = $context->getLocal('property.typeHint');
+        $allRules = $context->getLocal('option.typeHintRules');
         $ruleExtractor = $allRules[$typeHint] ?? $allRules['default'];
-        $rule = $ruleExtractor->extract($strict, $propertiesContainer);
+        $rule = $ruleExtractor->extract($context);
 
-        return $strict ? new Rules\Nullable($rule) : new Rules\Optional($rule);
+        return $context->getGlobal('option.strict') ? new Rules\Nullable($rule) : new Rules\Optional($rule);
     }
 }

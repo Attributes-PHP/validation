@@ -2,13 +2,14 @@
 
 namespace Attributes\Validation\Transformers;
 
+use Attributes\Validation\Context;
+use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\TransformException;
 use Attributes\Validation\Property;
 use Attributes\Validation\Transformers\Types as Types;
 use DateTime;
 use DateTimeInterface;
 use Exception;
-use ReflectionEnum;
 use ReflectionNamedType;
 
 class CastPropertyTransformer implements PropertyTransformer
@@ -17,36 +18,33 @@ class CastPropertyTransformer implements PropertyTransformer
 
     private array $parentMappings;
 
-    private bool $strict;
-
-    private bool $stopFirstError;
-
-    public function __construct(array $mappings = [], array $parentMappings = [], bool $strict = false, bool $stopFirstError = true)
+    public function __construct(array $mappings = [], array $parentMappings = [])
     {
         $this->mappings = array_merge($this->getDefaultMappings(), $mappings);
         $this->parentMappings = array_merge($this->getDefaultParentMappings(), $parentMappings);
-        $this->strict = $strict;
-        $this->stopFirstError = $stopFirstError;
     }
 
     /**
      * Casts a value according to the type hint of the given property
      *
      * @param  Property  $property  - Property to cast
+     * @param  Context  $context  - Validation context
      * @return mixed - Cast value
      *
      * @throws TransformException - If unable to cast property value
+     * @throws ContextPropertyException - When unable to find context properties
      */
-    public function transform(Property $property): mixed
+    public function transform(Property $property, Context $context): mixed
     {
         $reflectionProperty = $property->getReflection();
         if (! $reflectionProperty->hasType()) {
             return $property->getValue();
         }
 
+        $context->setLocal(PropertyTransformer::class, $this, override: true);
         $propertyType = $reflectionProperty->getType();
         if ($propertyType instanceof ReflectionNamedType) {
-            return $this->castValue($propertyType, $property->getValue());
+            return $this->castValue($propertyType, $property->getValue(), $context);
         }
 
         $allPropertyTypes = $propertyType->getTypes();
@@ -54,7 +52,7 @@ class CastPropertyTransformer implements PropertyTransformer
         for ($i = count($allPropertyTypes) - 1; $i >= 0; $i--) {
             $type = $allPropertyTypes[$i];
             try {
-                return $this->castValue($type, $property->getValue());
+                return $this->castValue($type, $property->getValue(), $context);
             } catch (TransformException $error) {
             }
         }
@@ -70,17 +68,20 @@ class CastPropertyTransformer implements PropertyTransformer
      * @return mixed - Cast value
      *
      * @throws TransformException - If unable to cast the given value
+     * @throws ContextPropertyException
      */
-    protected function castValue(ReflectionNamedType $propertyType, mixed $value): mixed
+    protected function castValue(ReflectionNamedType $propertyType, mixed $value, Context $context): mixed
     {
         $propertyTypeName = $propertyType->getName();
+        $context->setLocal('property.typeHint', $propertyTypeName, override: true);
         $cast = $this->getTypeCastInstance($propertyTypeName);
+        $context->setLocal(Types\TypeCast::class, $cast, override: true);
         if ($propertyType->allowsNull()) {
             $cast = new $this->mappings['null']($cast);
         }
 
         try {
-            return $cast->cast($value, $this->strict);
+            return $cast->cast($value, $context);
         } catch (TransformException $error) {
             throw $error;
         } catch (Exception $error) {
@@ -150,6 +151,6 @@ class CastPropertyTransformer implements PropertyTransformer
             throw new TransformException("Unable to cast '$propertyTypeName'. Expected '$castClass' to implement $expectedClass");
         }
 
-        return $castClass === Types\AnyClass::class ? new $castClass($propertyTypeName, $this, $this->stopFirstError) : new $castClass;
+        return new $castClass;
     }
 }

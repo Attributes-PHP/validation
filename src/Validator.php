@@ -3,6 +3,7 @@
 namespace Attributes\Validation;
 
 use Attributes\Validation\Exceptions\BaseException;
+use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Transformers\CastPropertyTransformer;
 use Attributes\Validation\Transformers\PropertyTransformer;
@@ -17,13 +18,18 @@ class Validator implements Validatable
 
     private PropertyValidator $validator;
 
-    private bool $stopFirstError;
+    private Context $context;
 
-    public function __construct(?PropertyValidator $validator = null, ?PropertyTransformer $transformer = null, bool $stopFirstError = false, bool $strict = false)
+    /**
+     * @throws ContextPropertyException
+     */
+    public function __construct(?PropertyValidator $validator = null, ?PropertyTransformer $transformer = null, bool $stopFirstError = false, bool $strict = false, ?Context $context = null)
     {
-        $this->validator = $validator ?? new RespectPropertyValidator(strict: $strict);
-        $this->transformer = $transformer ?? new CastPropertyTransformer(strict: $strict, stopFirstError: $stopFirstError);
-        $this->stopFirstError = $stopFirstError;
+        $this->validator = $validator ?? new RespectPropertyValidator;
+        $this->transformer = $transformer ?? new CastPropertyTransformer;
+        $this->context = $context ?? new Context;
+        $this->context->setGlobal('option.stopFirstError', $stopFirstError);
+        $this->context->setGlobal('option.strict', $strict);
     }
 
     /**
@@ -34,6 +40,7 @@ class Validator implements Validatable
      * @return object - Model populated with the validated data
      *
      * @throws ValidationException - If validation fails
+     * @throws ContextPropertyException - If unable to retrieve a given context property
      */
     public function validate(array $data, object $model): object
     {
@@ -46,7 +53,7 @@ class Validator implements Validatable
             if (! array_key_exists($propertyName, $data)) {
                 if (! $reflectionProperty->isInitialized($model)) {
                     $errorInfo->addErrorMessage("Missing required property '$propertyName'", $propertyName);
-                    if ($this->stopFirstError) {
+                    if ($this->context->getGlobal('option.stopFirstError')) {
                         throw new ValidationException('Validation failed', $errorInfo);
                     }
                 }
@@ -56,13 +63,15 @@ class Validator implements Validatable
 
             $propertyValue = $data[$propertyName];
             $property = new Property($reflectionProperty, $propertyValue);
+            $this->context->setGlobal(Property::class, $property, override: true);
             try {
-                $this->validator->validate($property);
-                $value = $this->transformer->transform($property);
+                $this->validator->validate($property, $this->context);
+                $this->context->resetLocal();
+                $value = $this->transformer->transform($property, $this->context);
                 $reflectionProperty->setValue($validModel, $value);
             } catch (BaseException $error) {
                 $errorInfo->addError($error);
-                if ($this->stopFirstError) {
+                if ($this->context->getGlobal('option.stopFirstError')) {
                     throw new ValidationException('Invalid data', $errorInfo, previous: $error);
                 }
             } catch (ReflectionException $error) {

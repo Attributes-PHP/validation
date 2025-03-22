@@ -6,6 +6,8 @@
 
 namespace Attributes\Validation\Transformers\Types;
 
+use Attributes\Validation\Context;
+use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\TransformException;
 
 class RawBool implements TypeCast
@@ -14,14 +16,15 @@ class RawBool implements TypeCast
      * Casts a given value into a given type
      *
      * @param  mixed  $value  - Value to cast
-     * @param  bool  $strict  - Determines if a strict casting should be applied. True for strict casting or else otherwise
+     * @param  Context  $context  - Validation context
      * @return mixed - Value properly cast
      *
-     * @throws TransformException - If unable to
+     * @throws TransformException
+     * @throws ContextPropertyException - When unable to find context properties
      */
-    public function cast(mixed $value, bool $strict): bool
+    public function cast(mixed $value, Context $context): bool
     {
-        if ($strict) {
+        if ($context->getGlobal('option.strict')) {
             return is_bool($value) ? $value : throw new TransformException('Invalid boolean');
         }
 

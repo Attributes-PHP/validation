@@ -2,6 +2,7 @@
 
 namespace Attributes\Validation\Validators\RulesExtractors;
 
+use Attributes\Validation\Context;
 use Attributes\Validation\Property;
 use Generator;
 
@@ -19,10 +20,10 @@ class ChainRulesExtractor implements PropertyRulesExtractor
      *
      * @param  Property  $property  - Property to yield the rules from
      */
-    public function getRulesFromProperty(Property $property): Generator
+    public function getRulesFromProperty(Property $property, Context $context): Generator
     {
         foreach ($this->rulesExtractors as $rulesExtractor) {
-            foreach ($rulesExtractor->getRulesFromProperty($property) as $rule) {
+            foreach ($rulesExtractor->getRulesFromProperty($property, $context) as $rule) {
                 yield $rule;
             }
         }

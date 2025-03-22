@@ -6,28 +6,26 @@
 
 namespace Attributes\Validation\Transformers\Types;
 
+use Attributes\Validation\Context;
+use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\TransformException;
 
 class StrictType implements TypeCast
 {
-    private string $type;
-
-    public function __construct(string $type)
-    {
-        $this->type = $type;
-    }
-
     /**
      * Checks if a given value has the expected type
      *
      * @param  mixed  $value  - Value to cast
-     * @param  bool  $strict  - Determines if a strict casting should be applied. This is ignored
+     * @param  Context  $context  - Validation context
      * @return mixed - Value properly cast
      *
      * @throws TransformException
+     * @throws ContextPropertyException - When unable to fiend context property
      */
-    public function cast(mixed $value, bool $strict): mixed
+    public function cast(mixed $value, Context $context): mixed
     {
-        return is_a($value, $this->type) ? $value : throw new TransformException("Invalid $this->type");
+        $typeHint = $context->getLocal('property.typeHint');
+
+        return is_a($value, $typeHint) ? $value : throw new TransformException("Invalid $typeHint");
     }
 }

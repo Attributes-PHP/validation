@@ -6,8 +6,9 @@
 
 namespace Attributes\Validation\Validators\RulesExtractors\Types;
 
-use Attributes\Validation\Exceptions\ValidationException;
-use Attributes\Validation\Validators\RulesExtractors\PropertiesContainer;
+use Attributes\Validation\Context;
+use Attributes\Validation\Exceptions\ContextPropertyException;
+use Attributes\Validation\Validators\RulesExtractors\RespectTypeHintRulesExtractor;
 use ReflectionEnum;
 use ReflectionException;
 use Respect\Validation\Rules as Rules;
@@ -15,28 +16,24 @@ use Respect\Validation\Validatable;
 
 class RawEnum implements TypeRespectExtractor
 {
-    use NeedsProperty;
-
     /**
      * Retrieves the validation rules to check if a value is null
      *
-     * @param  bool  $strict  - Determines if a strict validation rule should be applied. True for strict validation or else otherwise
-     * @param  PropertiesContainer  $propertiesContainer  - Additional properties which could influence the validation rules. Needs typeHint and typeHintRulesExtractor
+     * @param  Context  $context  - Validation context
      *
-     * @throws ValidationException
-     * @throws ReflectionException
+     * @throws ContextPropertyException - When unable to find required context property
+     * @throws ReflectionException - When given type-hint property is not an enum
      */
-    public function extract(bool $strict, PropertiesContainer $propertiesContainer): Validatable
+    public function extract(Context $context): Validatable
     {
-        $typeHint = $propertiesContainer->getProperty('typeHint');
-        $typeHintRulesExtractor = $propertiesContainer->getProperty('typeHintRulesExtractor');
+        $typeHint = $context->getLocal('property.typeHint');
+        $typeHintExtractor = $context->getLocal(RespectTypeHintRulesExtractor::class);
 
         $reflectionEnum = new ReflectionEnum($typeHint);
         $typeHintName = $reflectionEnum->getBackingType()->getName() ?: 'string';
-        $allRules = $typeHintRulesExtractor->getRules();
-        $ruleExtractor = $allRules[$typeHintName] ?? $allRules['default'];
-        $rule = $ruleExtractor->extract($strict, $propertiesContainer);
+        $ruleExtractor = $allRules[$typeHintName] ?? $typeHintExtractor->getRules()['default'];
+        $rule = $ruleExtractor->extract($context);
 
-        return $strict ? new Rules\Nullable($rule) : new Rules\Optional($rule);
+        return $context->getGlobal('option.strict') ? new Rules\Nullable($rule) : new Rules\Optional($rule);
     }
 }

@@ -2,10 +2,13 @@
 
 namespace Attributes\Validation\Validators\RulesExtractors;
 
+use Attributes\Validation\Context;
+use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Property;
 use Attributes\Validation\Validators\Rules as TypeRules;
 use Attributes\Validation\Validators\RulesExtractors\Types as TypeExtractors;
+use Attributes\Validation\Validators\RulesExtractors\Types\TypeRespectExtractor;
 use DateTime;
 use DateTimeInterface;
 use Generator;
@@ -18,13 +21,8 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
 {
     private array $typeHintRules;
 
-    private bool $strict;
-
-
-
-    public function __construct(array $typeHintRules = [], bool $strict = false)
+    public function __construct(array $typeHintRules = [])
     {
-        $this->strict = $strict;
         $this->typeHintRules = array_merge($this->getDefaultRules(), $typeHintRules);
     }
 
@@ -35,20 +33,23 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
      * @return Generator<Simple>
      *
      * @throws ValidationException
+     * @throws ContextPropertyException
      */
-    public function getRulesFromProperty(Property $property): Generator
+    public function getRulesFromProperty(Property $property, Context $context): Generator
     {
         $reflectionProperty = $property->getReflection();
         if (! $reflectionProperty->hasType()) {
             return;
         }
 
+        $context->setLocal(self::class, $this, override: true);
         $propertyType = $reflectionProperty->getType();
         if ($propertyType instanceof ReflectionNamedType) {
             $typeExtractor = $this->getTypeExtractor($propertyType);
-            yield $typeExtractor->extract($this->strict, $propertyType->getName());
+            $context->setLocal('property.typeHint', $propertyType->getName(), override: true);
+            yield $typeExtractor->extract($context);
         } elseif ($propertyType instanceof ReflectionUnionType || $propertyType instanceof ReflectionIntersectionType) {
-            yield $this->getTypeRuleFromReflectionProperty($propertyType);
+            yield $this->getTypeRuleFromReflectionProperty($propertyType, $context);
         } else {
             throw new ValidationException("Unsupported type {$propertyType->getName()}");
         }
@@ -56,16 +57,19 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
 
     /**
      * Retrieves the expected rule according to the given type
+     *
      * @throws ValidationException
+     * @throws ContextPropertyException
      */
-    private function getTypeRuleFromReflectionProperty(ReflectionUnionType|ReflectionIntersectionType $propertyType): TypeRules\InternalType
+    private function getTypeRuleFromReflectionProperty(ReflectionUnionType|ReflectionIntersectionType $propertyType, Context $context): TypeRules\InternalType
     {
         $rules = [];
         $mapping = [];
 
         foreach ($propertyType->getTypes() as $type) {
             $typeExtractor = $this->getTypeExtractor($type);
-            $rule = $typeExtractor->extract($this->strict, $type->getName());
+            $context->setLocal('property.typeHint', $type->getName(), override: true);
+            $rule = $typeExtractor->extract($context);
             $rules[] = $rule;
             $mapping[$rule->getName()] = $type->getName();
         }
@@ -91,6 +95,22 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
             DateTimeInterface::class => new TypeExtractors\DateTime,
             'default' => new TypeExtractors\AnyClass,
         ];
+    }
+
+    /**
+     * Retrieves the type-hint extractor according to the given property type
+     */
+    private function getTypeExtractor(ReflectionNamedType $propertyType): TypeRespectExtractor
+    {
+        if ($propertyType->allowsNull()) {
+            return $this->typeHintRules['null'];
+        }
+
+        $typeHintName = $propertyType->getName();
+        $typeHintName = enum_exists($typeHintName) ? 'enum' : $typeHintName;
+        $typeName = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'default';
+
+        return $this->typeHintRules[$typeName];
     }
 
     public function getRules(): array

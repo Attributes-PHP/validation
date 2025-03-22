@@ -2,7 +2,9 @@
 
 namespace Attributes\Validation\Validators;
 
+use Attributes\Validation\Context;
 use Attributes\Validation\ErrorInfo;
+use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Property;
 use Attributes\Validation\Validators\Rules\Union;
@@ -10,7 +12,6 @@ use Attributes\Validation\Validators\RulesExtractors\ChainRulesExtractor;
 use Attributes\Validation\Validators\RulesExtractors\PropertyRulesExtractor;
 use Attributes\Validation\Validators\RulesExtractors\RespectAttributesRulesExtractor;
 use Attributes\Validation\Validators\RulesExtractors\RespectTypeHintRulesExtractor;
-use Attributes\Validation\Validators\RulesExtractors\Types as TypeExtractors;
 use ReflectionException;
 use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
 use Respect\Validation\Factory;
@@ -19,9 +20,9 @@ class RespectPropertyValidator implements PropertyValidator
 {
     private PropertyRulesExtractor $extractor;
 
-    public function __construct(?PropertyRulesExtractor $extractor = null, bool $strict = false)
+    public function __construct(?PropertyRulesExtractor $extractor = null)
     {
-        $this->extractor = $extractor ?? $this->getDefaultExtractor($strict);
+        $this->extractor = $extractor ?? $this->getDefaultExtractor();
 
         Factory::setDefaultInstance(
             (new Factory)
@@ -33,11 +34,13 @@ class RespectPropertyValidator implements PropertyValidator
     /**
      * @throws ValidationException
      * @throws ReflectionException
+     * @throws ContextPropertyException
      */
-    public function validate(Property $property): void
+    public function validate(Property $property, Context $context): void
     {
+        $context->setLocal(PropertyRulesExtractor::class, $this->extractor, override: true);
         $errorInfo = new ErrorInfo($property->getName());
-        foreach ($this->extractor->getRulesFromProperty($property) as $rule) {
+        foreach ($this->extractor->getRulesFromProperty($property, $context) as $rule) {
             try {
                 $rule->assert($property->getValue());
                 if ($rule instanceof Union) {
@@ -54,11 +57,10 @@ class RespectPropertyValidator implements PropertyValidator
         }
     }
 
-    private function getDefaultExtractor(bool $strict): PropertyRulesExtractor
+    private function getDefaultExtractor(): PropertyRulesExtractor
     {
         $chainRulesExtractor = new ChainRulesExtractor;
-        $typeHintRules = ['default' => new TypeExtractors\AnyClass($chainRulesExtractor)];
-        $chainRulesExtractor->add(new RespectTypeHintRulesExtractor(typeHintRules: $typeHintRules, strict: $strict));
+        $chainRulesExtractor->add(new RespectTypeHintRulesExtractor);
         $chainRulesExtractor->add(new RespectAttributesRulesExtractor);
 
         return $chainRulesExtractor;

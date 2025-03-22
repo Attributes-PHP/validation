@@ -2,6 +2,7 @@
 
 namespace Attributes\Validation\Validators;
 
+use Attributes\Validation\Context;
 use Attributes\Validation\Property;
 
 interface PropertyValidator
@@ -11,5 +12,5 @@ interface PropertyValidator
      *
      * @param  Property  $property  - The property to be validated
      */
-    public function validate(Property $property): void;
+    public function validate(Property $property, Context $context): void;
 }

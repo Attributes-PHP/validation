@@ -6,7 +6,7 @@
 
 namespace Attributes\Validation\Validators\RulesExtractors\Types;
 
-use Attributes\Validation\Validators\RulesExtractors\PropertiesContainer;
+use Attributes\Validation\Context;
 use Respect\Validation\Rules as Rules;
 use Respect\Validation\Validatable;
 
@@ -15,10 +15,9 @@ class RawObject implements TypeRespectExtractor
     /**
      * Retrieves the validation rules to check if a value is a valid object
      *
-     * @param  bool  $strict  - Determines if a strict validation rule should be applied. True for strict validation or else otherwise
-     * @param  PropertiesContainer  $propertiesContainer  - Additional properties which could influence the validation rules
+     * @param  Context  $context  - Validation context
      */
-    public function extract(bool $strict, PropertiesContainer $propertiesContainer): Validatable
+    public function extract(Context $context): Validatable
     {
         return new Rules\AnyOf(new Rules\ObjectType, new Rules\ArrayVal);
     }

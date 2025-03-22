@@ -2,6 +2,7 @@
 
 namespace Attributes\Validation\Validators\RulesExtractors;
 
+use Attributes\Validation\Context;
 use Attributes\Validation\Property;
 use Generator;
 use ReflectionClass;
@@ -13,9 +14,10 @@ class RespectAttributesRulesExtractor implements PropertyRulesExtractor
      * Yields each validation rule of a given property
      *
      * @param  Property  $property  - Property to yield the rules from
+     * @param  Context  $context  - The current validation context
      * @return Generator<Rules\AbstractRule>
      */
-    public function getRulesFromProperty(Property $property): Generator
+    public function getRulesFromProperty(Property $property, Context $context): Generator
     {
         $allAttributes = $property->getReflection()->getAttributes();
         if (! $allAttributes) {
