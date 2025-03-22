@@ -10,7 +10,7 @@ use Attributes\Validation\Context;
 use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Property;
-use Attributes\Validation\Validators\PropertyValidator;
+use Attributes\Validation\Validators\RulesExtractors\PropertyRulesExtractor;
 use ReflectionClass;
 use Respect\Validation\Rules as Rules;
 use Respect\Validation\Validatable;
@@ -48,7 +48,7 @@ class AnyClass implements TypeRespectExtractor
 
         $rules = [];
         $reflectionClass = new ReflectionClass($typeHint);
-        $rulesExtractor = $context->getLocal(PropertyValidator::class);
+        $rulesExtractor = $context->getLocal(PropertyRulesExtractor::class);
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $property = new Property($reflectionProperty, null);
 

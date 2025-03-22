@@ -8,6 +8,7 @@ namespace Attributes\Validation\Validators\RulesExtractors\Types;
 
 use Attributes\Validation\Context;
 use Attributes\Validation\Exceptions\ValidationException;
+use Attributes\Validation\Validators\RulesExtractors\RespectTypeHintRulesExtractor;
 use Respect\Validation\Rules as Rules;
 use Respect\Validation\Validatable;
 
@@ -23,7 +24,8 @@ class RawNull implements TypeRespectExtractor
     public function extract(Context $context): Validatable
     {
         $typeHint = $context->getLocal('property.typeHint');
-        $allRules = $context->getLocal('option.typeHintRules');
+        $typeHintExtractor = $context->getLocal(RespectTypeHintRulesExtractor::class);
+        $allRules = $typeHintExtractor->getRules();
         $ruleExtractor = $allRules[$typeHint] ?? $allRules['default'];
         $rule = $ruleExtractor->extract($context);
 

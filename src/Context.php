@@ -66,7 +66,7 @@ class Context
             throw new ContextPropertyException('Property '.$propertyName.' already exists.');
         }
 
-        $this->global[$propertyName] = $value;
+        $this->local[$propertyName] = $value;
     }
 
     /**
@@ -87,7 +87,6 @@ class Context
     }
 
     /**
-     * @throws ValidationException
      * @throws ContextPropertyException
      */
     public function getOptionalLocal(string $propertyName, mixed $defaultValue = null): mixed
@@ -107,5 +106,13 @@ class Context
     public function resetLocal(): void
     {
         $this->local = [];
+    }
+
+    public function getAll(): array
+    {
+        return [
+            'locals' => $this->local,
+            'globals' => $this->global,
+        ];
     }
 }

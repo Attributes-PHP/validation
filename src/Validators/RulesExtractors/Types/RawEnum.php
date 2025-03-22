@@ -28,12 +28,12 @@ class RawEnum implements TypeRespectExtractor
     {
         $typeHint = $context->getLocal('property.typeHint');
         $typeHintExtractor = $context->getLocal(RespectTypeHintRulesExtractor::class);
+        $allRules = $typeHintExtractor->getRules();
 
         $reflectionEnum = new ReflectionEnum($typeHint);
-        $typeHintName = $reflectionEnum->getBackingType()->getName() ?: 'string';
-        $ruleExtractor = $allRules[$typeHintName] ?? $typeHintExtractor->getRules()['default'];
-        $rule = $ruleExtractor->extract($context);
+        $typeHintName = $reflectionEnum->getBackingType() ? $reflectionEnum->getBackingType()->getName() : 'string';
+        $ruleExtractor = $allRules[$typeHintName] ?? $allRules['default'];
 
-        return $context->getGlobal('option.strict') ? new Rules\Nullable($rule) : new Rules\Optional($rule);
+        return $ruleExtractor->extract($context);
     }
 }
