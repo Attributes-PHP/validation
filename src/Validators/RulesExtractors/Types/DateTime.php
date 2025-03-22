@@ -23,7 +23,7 @@ class DateTime implements TypeRespectExtractor
      */
     public function extract(Context $context): Validatable
     {
-        $format = $context->getOptionalProperty('datetime.format', DateTimeInterface::ATOM);
+        $format = $context->getOptionalGlobal('datetime.format', DateTimeInterface::ATOM);
 
         return new Rules\AnyOf(new Rules\DateTime(format: $format), new Rules\Instance(DateTimeInterface::class));
     }

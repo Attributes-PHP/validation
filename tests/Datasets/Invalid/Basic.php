@@ -1,5 +1,7 @@
 <?php
 
+use Attributes\Validation\Tests\Integration\Models\Basic as Models;
+
 dataset('invalid datetime', [
     '2013-6-23',
     '6/23/2013',
@@ -88,4 +90,65 @@ dataset('invalid string', [
     new DateTime,
     new class {},
     null,
+]);
+
+dataset('invalid enum', [
+    'hello',
+    'admin',
+    'guest',
+    'GuEsT',
+    'GUESt',
+    1,
+    2.4,
+    false,
+    true,
+    (object) [[1, 2, 3], [1, 2, 3], [1, 2, 3]],
+    new DateTime,
+    '6/23/2013',
+    [1, 2, 3],
+    new class {},
+    Models\RawStrEnum::ADMIN,
+]);
+
+dataset('invalid string enum', [
+    'hello',
+    'GUEST',
+    'guesT',
+    'guest ',
+    ' guest ',
+    'ADMIN',
+    1,
+    2.4,
+    false,
+    true,
+    (object) [[1, 2, 3], [1, 2, 3], [1, 2, 3]],
+    new DateTime,
+    '6/23/2013',
+    [1, 2, 3],
+    new class {},
+    Models\RawEnum::ADMIN,
+]);
+
+dataset('invalid int enum', [
+    0.0,
+    1.0,
+    '1',
+    '0',
+    'hello',
+    'admin',
+    'guest',
+    'GuEsT',
+    'GUESt',
+    1.87,
+    2.4,
+    false,
+    true,
+    (object) [[1, 2, 3], [1, 2, 3], [1, 2, 3]],
+    new DateTime,
+    '6/23/2013',
+    [[1, 2, 3]],
+    new class {},
+    Models\RawEnum::ADMIN,
+    -294,
+    198,
 ]);

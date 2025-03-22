@@ -1,5 +1,7 @@
 <?php
 
+use Attributes\Validation\Tests\Integration\Models\Basic as Models;
+
 dataset('datetime', [
     '2025-03-06T08:57:06+00:00',
     '2050-12-06T00:00:03+00:00',
@@ -82,4 +84,25 @@ dataset('string', [
     -10e5,
     2e3,
     '',
+]);
+
+dataset('enum', [
+    'GUEST',
+    'ADMIN',
+    Models\RawEnum::GUEST,
+    Models\RawEnum::ADMIN,
+]);
+
+dataset('string enum', [
+    'guest',
+    'admin',
+    Models\RawStrEnum::GUEST,
+    Models\RawStrEnum::ADMIN,
+]);
+
+dataset('int enum', [
+    0,
+    1,
+    Models\RawIntEnum::GUEST,
+    Models\RawIntEnum::ADMIN,
 ]);

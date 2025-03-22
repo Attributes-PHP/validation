@@ -12,14 +12,6 @@ declare(strict_types=1);
 
 namespace Attributes\Validation\Tests\Integration;
 
-require_once __DIR__.'/Models/Basic/Bool.php';
-require_once __DIR__.'/Models/Basic/String.php';
-require_once __DIR__.'/Models/Basic/Int.php';
-require_once __DIR__.'/Models/Basic/Float.php';
-require_once __DIR__.'/Models/Basic/Array.php';
-require_once __DIR__.'/Models/Basic/Object.php';
-require_once __DIR__.'/Models/Basic/DateTime.php';
-
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Tests\Integration\Models\Basic as Models;
 use Attributes\Validation\Validator;
@@ -41,6 +33,9 @@ test('Using default optional value', function (object $instance) {
         new Models\DefaultOptionalFloat,
         new Models\DefaultOptionalArr,
         new Models\DefaultOptionalObj,
+        new Models\DefaultOptionalEnum,
+        new Models\DefaultOptionalStrEnum,
+        new Models\DefaultOptionalIntEnum,
     ])
     ->group('validator', 'basic');
 
@@ -390,3 +385,258 @@ test('Invalid datetime', function ($value) {
     ->with('invalid datetime')
     ->throws(ValidationException::class, 'Invalid data')
     ->group('validator', 'basic', 'datetime');
+
+// Enum validation
+
+test('Enum type', function (string|Models\RawEnum $value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $model = $validator->validate(['value' => $value], new Models\Enum);
+
+    if (is_string($value)) {
+        foreach (Models\RawEnum::cases() as $case) {
+            if ($case->name != $value) {
+                continue;
+            }
+            $value = $case;
+            break;
+        }
+    }
+    expect($model)
+        ->toBeInstanceOf(Models\Enum::class)
+        ->toHaveProperty('value', $value);
+})
+    ->with('enum')
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum');
+
+test('Optional enum type', function (null|string|Models\RawEnum $value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $model = $validator->validate(['value' => $value], new Models\OptionalEnum);
+
+    if (is_string($value)) {
+        foreach (Models\RawEnum::cases() as $case) {
+            if ($case->name != $value) {
+                continue;
+            }
+            $value = $case;
+            break;
+        }
+    }
+
+    expect($model)
+        ->toBeInstanceOf(Models\OptionalEnum::class)
+        ->toHaveProperty('value', $value);
+})
+    ->with([null, 'GUEST', Models\RawEnum::ADMIN])
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum');
+
+test('Default optional enum type', function (string|Models\RawEnum $value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $model = $validator->validate(['value' => $value], new Models\DefaultOptionalEnum);
+
+    if (is_string($value)) {
+        foreach (Models\RawEnum::cases() as $case) {
+            if ($case->name != $value) {
+                continue;
+            }
+            $value = $case;
+            break;
+        }
+    }
+
+    expect($model)
+        ->toBeInstanceOf(Models\DefaultOptionalEnum::class)
+        ->toHaveProperty('value', $value);
+})
+    ->with(['ADMIN', Models\RawEnum::GUEST])
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum');
+
+test('Using default value - enum', function (bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $model = $validator->validate([], new Models\DefaultEnum);
+    expect($model)
+        ->toBeInstanceOf(Models\DefaultEnum::class)
+        ->toHaveProperty('value', Models\RawEnum::GUEST);
+})
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum');
+
+test('Invalid enum', function ($value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $validator->validate(['value' => $value], new Models\Enum);
+})
+    ->with('invalid enum')
+    ->throws(ValidationException::class, 'Invalid data')
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum');
+
+// String Enum validation
+
+test('String enum type', function (string|Models\RawStrEnum $value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $model = $validator->validate(['value' => $value], new Models\StrEnum);
+
+    if (is_string($value)) {
+        foreach (Models\RawStrEnum::cases() as $case) {
+            if ($case->value != $value) {
+                continue;
+            }
+            $value = $case;
+            break;
+        }
+    }
+    expect($model)
+        ->toBeInstanceOf(Models\StrEnum::class)
+        ->toHaveProperty('value', $value);
+})
+    ->with('string enum')
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum', 'string enum');
+
+test('Optional string enum type', function (null|string|Models\RawStrEnum $value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $model = $validator->validate(['value' => $value], new Models\OptionalStrEnum);
+
+    if (is_string($value)) {
+        foreach (Models\RawStrEnum::cases() as $case) {
+            if ($case->value != $value) {
+                continue;
+            }
+            $value = $case;
+            break;
+        }
+    }
+
+    expect($model)
+        ->toBeInstanceOf(Models\OptionalStrEnum::class)
+        ->toHaveProperty('value', $value);
+})
+    ->with([null, 'guest', Models\RawStrEnum::ADMIN])
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum', 'string enum');
+
+test('Default optional string enum type', function (string|Models\RawStrEnum $value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $model = $validator->validate(['value' => $value], new Models\DefaultOptionalStrEnum);
+
+    if (is_string($value)) {
+        foreach (Models\RawStrEnum::cases() as $case) {
+            if ($case->value != $value) {
+                continue;
+            }
+            $value = $case;
+            break;
+        }
+    }
+
+    expect($model)
+        ->toBeInstanceOf(Models\DefaultOptionalStrEnum::class)
+        ->toHaveProperty('value', $value);
+})
+    ->with(['admin', Models\RawStrEnum::GUEST])
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum', 'string enum');
+
+test('Using default value - string enum', function (bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $model = $validator->validate([], new Models\DefaultStrEnum);
+    expect($model)
+        ->toBeInstanceOf(Models\DefaultStrEnum::class)
+        ->toHaveProperty('value', Models\RawStrEnum::GUEST);
+})
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum', 'string enum');
+
+test('Invalid string enum', function ($value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $validator->validate(['value' => $value], new Models\StrEnum);
+})
+    ->with('invalid string enum')
+    ->throws(ValidationException::class, 'Invalid data')
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum', 'string enum');
+
+// Int Enum validation
+
+test('Int enum type', function ($value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $model = $validator->validate(['value' => $value], new Models\IntEnum);
+
+    $value = is_string($value) ? (int) $value : $value;
+    foreach (Models\RawIntEnum::cases() as $case) {
+        if ($case->value != $value) {
+            continue;
+        }
+        $value = $case;
+        break;
+    }
+    expect($model)
+        ->toBeInstanceOf(Models\IntEnum::class)
+        ->toHaveProperty('value', $value);
+})
+    ->with('int enum')
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum', 'int enum');
+
+test('Optional int enum type', function (null|int|Models\RawIntEnum $value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $model = $validator->validate(['value' => $value], new Models\OptionalIntEnum);
+
+    if (! is_null($value)) {
+        foreach (Models\RawIntEnum::cases() as $case) {
+            if ($case->value != $value) {
+                continue;
+            }
+            $value = $case;
+            break;
+        }
+    }
+
+    expect($model)
+        ->toBeInstanceOf(Models\OptionalIntEnum::class)
+        ->toHaveProperty('value', $value);
+})
+    ->with([null, 0, Models\RawIntEnum::ADMIN])
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum', 'int enum');
+
+test('Default optional int enum type', function (int|Models\RawIntEnum $value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $model = $validator->validate(['value' => $value], new Models\DefaultOptionalIntEnum);
+
+    foreach (Models\RawIntEnum::cases() as $case) {
+        if ($case->value != $value) {
+            continue;
+        }
+        $value = $case;
+        break;
+    }
+
+    expect($model)
+        ->toBeInstanceOf(Models\DefaultOptionalIntEnum::class)
+        ->toHaveProperty('value', $value);
+})
+    ->with([1, Models\RawIntEnum::GUEST])
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum', 'int enum');
+
+test('Using default value - int enum', function (bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $model = $validator->validate([], new Models\DefaultIntEnum);
+    expect($model)
+        ->toBeInstanceOf(Models\DefaultIntEnum::class)
+        ->toHaveProperty('value', Models\RawIntEnum::GUEST);
+})
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum', 'int enum');
+
+test('Invalid int enum', function ($value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $validator->validate(['value' => $value], new Models\IntEnum);
+})
+    ->with('invalid int enum')
+    ->throws(ValidationException::class, 'Invalid data')
+    ->with([true, false])
+    ->group('validator', 'basic', 'enum', 'int enum');

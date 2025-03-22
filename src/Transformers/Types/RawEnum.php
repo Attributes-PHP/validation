@@ -25,32 +25,28 @@ class RawEnum implements TypeCast
      * @throws TransformException
      * @throws ContextPropertyException
      */
-    public function cast(mixed $value, Context $context): string
+    public function cast(mixed $value, Context $context): mixed
     {
         $typeHint = $context->getLocal('property.typeHint');
         if (! enum_exists($typeHint)) {
             throw new TransformException('Enum \''.$typeHint.'\' does not exist.');
         }
 
+        if ($value instanceof $typeHint) {
+            return $value;
+        }
+
         $transformer = $context->getLocal(PropertyTransformer::class);
         try {
             $reflectionEnum = new ReflectionEnum($typeHint);
-            $typeHintName = $reflectionEnum->getBackingType()->getName() ?: 'string';
+            $backingType = $reflectionEnum->getBackingType();
+            $typeHintName = $backingType ? $backingType->getName() : 'string';
             $cast = $transformer->getTypeCastInstance($typeHintName);
             $value = $cast->cast($value, $context);
-            if (is_string($value)) {
-                return $reflectionEnum->getCase($value)->getValue();
-            }
 
-            foreach ($typeHint::getCases() as $case) {
-                if ($case->value == $value) {
-                    return $case;
-                }
-            }
+            return $backingType ? $typeHint::from($value) : $reflectionEnum->getCase($value)->getValue();
         } catch (Throwable $e) {
             throw new TransformException('Invalid enum', previous: $e);
         }
-
-        throw new TransformException('Invalid enum');
     }
 }

@@ -6,12 +6,14 @@ use DateTime;
 
 class User
 {
-//    public Profile $profile;
-    public UserType $userType;
-//    public DateTime $created;
+    public Profile $profile;
 
-//    public function __construct(?DateTime $created = null)
-//    {
-//        $this->created = $created ?? new DateTime();
-//    }
+    public UserType $userType;
+
+    public DateTime $createdAt;
+
+    public function __construct(?DateTime $createdAt = null)
+    {
+        $this->createdAt = $createdAt ?? new DateTime;
+    }
 }

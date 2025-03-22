@@ -26,9 +26,9 @@ class RawNull implements TypeCast
     {
         $cast = $context->getLocal(TypeCast::class);
         if ($context->getGlobal('option.strict')) {
-            return is_null($value) ? $value : $cast->cast($value, true);
+            return is_null($value) ? $value : $cast->cast($value, $context);
         }
 
-        return is_null($value) || $value === '' ? null : $cast->cast($value, false);
+        return is_null($value) || $value === '' ? null : $cast->cast($value, $context);
     }
 }

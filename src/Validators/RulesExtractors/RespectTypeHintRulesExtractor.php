@@ -46,6 +46,7 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
         $propertyType = $reflectionProperty->getType();
         if ($propertyType instanceof ReflectionNamedType) {
             $typeExtractor = $this->getTypeExtractor($propertyType);
+            $context->setLocal(ReflectionNamedType::class, $propertyType, override: true);
             $context->setLocal('property.typeHint', $propertyType->getName(), override: true);
             yield $typeExtractor->extract($context);
         } elseif ($propertyType instanceof ReflectionUnionType || $propertyType instanceof ReflectionIntersectionType) {
@@ -68,6 +69,7 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
 
         foreach ($propertyType->getTypes() as $type) {
             $typeExtractor = $this->getTypeExtractor($type);
+            $context->setLocal(ReflectionNamedType::class, $type, override: true);
             $context->setLocal('property.typeHint', $type->getName(), override: true);
             $rule = $typeExtractor->extract($context);
             $rules[] = $rule;
@@ -100,9 +102,9 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
     /**
      * Retrieves the type-hint extractor according to the given property type
      */
-    private function getTypeExtractor(ReflectionNamedType $propertyType): TypeRespectExtractor
+    public function getTypeExtractor(ReflectionNamedType $propertyType, bool $ignoreNull = false): TypeRespectExtractor
     {
-        if ($propertyType->allowsNull()) {
+        if ($propertyType->allowsNull() && ! $ignoreNull) {
             return $this->typeHintRules['null'];
         }
 

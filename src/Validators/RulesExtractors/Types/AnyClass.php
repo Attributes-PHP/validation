@@ -10,8 +10,10 @@ use Attributes\Validation\Context;
 use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Property;
-use Attributes\Validation\Validators\PropertyValidator;
+use Attributes\Validation\Validators\RulesExtractors\PropertyRulesExtractor;
 use ReflectionClass;
+use ReflectionException;
+use Respect\Validation\Exceptions\ComponentException;
 use Respect\Validation\Rules as Rules;
 use Respect\Validation\Validatable;
 
@@ -23,6 +25,9 @@ class AnyClass implements TypeRespectExtractor
      * @param  Context  $context  - Validation context
      *
      * @throws ValidationException - If type-hint is not a valid class
+     * @throws ContextPropertyException - When unable to find context properties
+     * @throws ComponentException
+     * @throws ReflectionException
      */
     public function extract(Context $context): Validatable
     {
@@ -36,27 +41,38 @@ class AnyClass implements TypeRespectExtractor
     }
 
     /**
-     * @throws ValidationException
      * @throws ContextPropertyException - When unable to find context properties
+     * @throws ComponentException
+     * @throws ReflectionException
      */
-    private function extractClassPropertiesRules(Context $context): Rules\KeySet
+    private function extractClassPropertiesRules(Context $context): Validatable
     {
         $typeHint = $context->getLocal('property.typeHint');
-        if (! class_exists($typeHint)) {
-            throw new ValidationException("Unable to locate class '$typeHint'");
-        }
-
         $rules = [];
+        $model = new $typeHint;
         $reflectionClass = new ReflectionClass($typeHint);
-        $rulesExtractor = $context->getLocal(PropertyValidator::class);
+        $rulesExtractor = $context->getLocal(PropertyRulesExtractor::class);
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $property = new Property($reflectionProperty, null);
 
             foreach ($rulesExtractor->getRulesFromProperty($property, $context) as $rule) {
-                $rules[] = new Rules\Key($property->getName(), $rule);
+                $isRequired = $this->isRequired($property) && ! $reflectionProperty->isInitialized($model);
+                $rules[] = new Rules\Key($property->getName(), $rule, $isRequired);
             }
         }
 
-        return new Rules\KeySet(...$rules);
+        $ignoreExtraKeys = $context->getOptionalGlobal('option.ignoreExtraKeys', true);
+
+        return $ignoreExtraKeys ? new Rules\AllOf(...$rules) : new Rules\KeySet(...$rules);
+    }
+
+    private function isRequired(Property $property): bool
+    {
+        $reflectionProperty = $property->getReflection();
+        if ($reflectionProperty->hasDefaultValue()) {
+            return false;
+        }
+
+        return true;
     }
 }

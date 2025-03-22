@@ -12,14 +12,6 @@ declare(strict_types=1);
 
 namespace Attributes\Validation\Tests\Integration;
 
-require_once __DIR__.'/Models/Basic/Bool.php';
-require_once __DIR__.'/Models/Basic/String.php';
-require_once __DIR__.'/Models/Basic/Int.php';
-require_once __DIR__.'/Models/Basic/Float.php';
-require_once __DIR__.'/Models/Basic/Array.php';
-require_once __DIR__.'/Models/Basic/Object.php';
-require_once __DIR__.'/Models/Basic/DateTime.php';
-
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Tests\Integration\Models\Basic as Models;
 use Attributes\Validation\Validator;
