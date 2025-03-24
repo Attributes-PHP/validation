@@ -8,7 +8,7 @@ class Post
 {
     public string $title;
 
-    public ?DateTime $published;
+    public ?DateTime $published = null;
 
     public function __construct(?DateTime $published = null)
     {

@@ -18,13 +18,13 @@ use Attributes\Validation\Validator;
 test('Valid nested', function () {
     $validator = new Validator;
     $data = [
-//        'profile' => [
-//            'firstName' => 'Andre',
-//            'lastName' => 'Gil',
-//            'post' => [
-//                'title' => 'How to validate data with classes in PHP',
-//            ],
-//        ],
+        'profile' => [
+            'firstName' => 'Andre',
+            'lastName' => 'Gil',
+            'post' => [
+                'title' => 'How to validate data with classes in PHP',
+            ],
+        ],
         'userType' => 'moderator',
     ];
     $model = $validator->validate($data, new Models\User);
