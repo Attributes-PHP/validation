@@ -49,6 +49,10 @@ class AnyClass implements TypeCast
         $propertyTransformer = $context->getLocal(PropertyTransformer::class);
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $propertyName = $reflectionProperty->getName();
+            if (! array_key_exists($propertyName, $value)) {
+                continue;
+            }
+
             $property = new Property($reflectionProperty, $value[$propertyName]);
             try {
                 $propertyValue = $propertyTransformer->transform($property, $context);

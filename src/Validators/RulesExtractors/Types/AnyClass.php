@@ -27,6 +27,7 @@ class AnyClass implements TypeRespectExtractor
      * @throws ValidationException - If type-hint is not a valid class
      * @throws ContextPropertyException - When unable to find context properties
      * @throws ComponentException
+     * @throws ReflectionException
      */
     public function extract(Context $context): Validatable
     {
@@ -54,12 +55,23 @@ class AnyClass implements TypeRespectExtractor
             $property = new Property($reflectionProperty, null);
 
             foreach ($rulesExtractor->getRulesFromProperty($property, $context) as $rule) {
-                $rules[] = new Rules\Key($property->getName(), $rule);
+                $isRequired = $this->isRequired($property);
+                $rules[] = new Rules\Key($property->getName(), $rule, $isRequired);
             }
         }
 
         $ignoreExtraKeys = $context->getOptionalGlobal('option.ignoreExtraKeys', true);
 
         return $ignoreExtraKeys ? new Rules\AllOf(...$rules) : new Rules\KeySet(...$rules);
+    }
+
+    private function isRequired(Property $property): bool
+    {
+        $reflectionProperty = $property->getReflection();
+        if ($reflectionProperty->hasDefaultValue()) {
+            return false;
+        }
+
+        return true;
     }
 }

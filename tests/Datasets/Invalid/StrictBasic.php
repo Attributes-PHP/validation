@@ -116,3 +116,20 @@ dataset('strict invalid string', [
     new class {},
     null,
 ]);
+
+dataset('strict invalid enum', [
+    'hello',
+    'admin',
+    'guest',
+    'GuEsT',
+    'GUESt',
+    1,
+    2.4,
+    false,
+    true,
+    (object) [[1, 2, 3], [1, 2, 3], [1, 2, 3]],
+    new DateTime,
+    '6/23/2013',
+    [1, 2, 3],
+    new class {},
+]);

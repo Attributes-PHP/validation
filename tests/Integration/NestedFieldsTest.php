@@ -14,6 +14,7 @@ namespace Attributes\Validation\Tests\Integration;
 
 use Attributes\Validation\Tests\Integration\Models\Nested as Models;
 use Attributes\Validation\Validator;
+use DateTime;
 
 test('Valid nested', function () {
     $validator = new Validator;
@@ -26,10 +27,20 @@ test('Valid nested', function () {
             ],
         ],
         'userType' => 'moderator',
+        'createdAt' => '2025-03-28T16:00:00+00:00',
     ];
     $model = $validator->validate($data, new Models\User);
     expect($model)
-        ->toBeInstanceOf(Models\User::class);
+        ->toBeInstanceOf(Models\User::class)
+        ->toHaveProperty('userType', Models\UserType::MODERATOR)
+        ->toHaveProperty('createdAt', new DateTime('2025-03-28T16:00:00+00:00'))
+        ->and($model->profile)
+        ->toHaveProperty('firstName', 'Andre')
+        ->toHaveProperty('lastName', 'Gil')
+        ->and($model->profile->post)
+        ->toHaveProperty('title', 'How to validate data with classes in PHP')
+        ->toHaveProperty('published', null);
+
 })
     ->group('validator', 'nested');
 
