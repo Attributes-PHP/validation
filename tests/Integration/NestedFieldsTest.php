@@ -44,10 +44,10 @@ test('Valid nested', function () {
 })
     ->group('validator', 'nested');
 
-//test('Invalid bool', function ($value) {
+// test('Invalid bool', function ($value) {
 //    $validator = new Validator;
 //    $validator->validate(['value' => $value], new Models\Boolean);
-//})
+// })
 //    ->with('invalid bool')
 //    ->throws(ValidationException::class, 'Invalid data')
 //    ->group('validator', 'nested');
