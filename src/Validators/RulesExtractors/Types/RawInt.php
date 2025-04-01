@@ -19,6 +19,6 @@ class RawInt implements TypeRespectExtractor
      */
     public function extract(Context $context): Validatable
     {
-        return $context->getGlobal('option.strict') ? new Rules\IntType : new Rules\NumericVal;
+        return $context->getGlobal('option.strict') ? new Rules\AllOf(new Rules\Finite, new Rules\IntType) : new Rules\AllOf(new Rules\Finite, new Rules\NumericVal);
     }
 }

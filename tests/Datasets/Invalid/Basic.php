@@ -68,6 +68,8 @@ dataset('invalid integer', [
     true,
     false,
     null,
+    3245e9898989898989898989,
+    '3245e9898989898989898989',
 ]);
 
 dataset('invalid bool', [

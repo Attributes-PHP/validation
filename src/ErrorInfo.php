@@ -24,25 +24,25 @@
 namespace Attributes\Validation;
 
 use Attributes\Validation\Exceptions\BaseException;
+use Attributes\Validation\Exceptions\ValidationException;
 
 class ErrorInfo
 {
-    private ?string $propertyName;
+    private Context $context;
 
     private array $errors = [];
 
-    public function __construct(?string $propertyName = null)
+    private bool $rawExceptions;
+
+    public function __construct(Context $context, bool $rawExceptions = false)
     {
-        $this->propertyName = $propertyName;
+        $this->context = $context;
+        $this->rawExceptions = $rawExceptions;
     }
 
     public function getErrors(): array
     {
-        if (is_null($this->propertyName)) {
-            return $this->errors;
-        }
-
-        return [$this->propertyName => $this->errors];
+        return $this->errors;
     }
 
     public function hasErrors(): bool
@@ -53,45 +53,29 @@ class ErrorInfo
     /**
      * Adds a validation error
      *
-     * @param  BaseException  $error  - The validation error
-     * @param  ?string  $propertyName  - The property in question
-     */
-    public function addError(BaseException $error, ?string $propertyName = null): void
-    {
-        $info = $error->getInfo();
-        if (is_null($info) || ! $info->hasErrors()) {
-            $this->addErrorMessage($error->getMessage(), $propertyName);
-
-            return;
-        }
-
-        if (is_null($propertyName)) {
-            $this->errors = array_merge($info->getErrors(), $this->errors);
-
-            return;
-        }
-
-        $this->errors[$propertyName] = array_merge($info->getErrors(), $this->errors[$propertyName] ?? []);
-    }
-
-    /**
-     * Adds a validation error message
+     * @param  BaseException|string  $error  - The validation error
      *
-     * @param  string  $error  - The validation error
-     * @param  ?string  $propertyName  - The property in question
+     * @throws ValidationException - When option.stopFirstError is true
+     * @throws Exceptions\ContextPropertyException
      */
-    public function addErrorMessage(string $error, ?string $propertyName = null): void
+    public function addError(BaseException|string $error): void
     {
-        if (is_null($propertyName)) {
-            $this->errors[] = $error;
+        $propertyPath = $this->context->getOptionalGlobal('propertyPath', []);
+        $errors = &$this->errors;
+        foreach ($propertyPath as $property) {
+            if (! isset($errors[$property])) {
+                $errors[$property] = [];
+            }
 
-            return;
+            $errors = &$errors[$property];
         }
+        $errors[] = $this->rawExceptions || is_string($error) ? $error : $error->getMessage();
 
-        if (! isset($this->errors[$propertyName])) {
-            $this->errors[$propertyName] = [];
+        if ($this->context->getGlobal('option.stopFirstError')) {
+            if (! is_string($error)) {
+                throw new ValidationException('Invalid data', $this, previous: $error);
+            }
+            throw new ValidationException('Invalid data', $this);
         }
-
-        $this->errors[$propertyName][] = $error;
     }
 }

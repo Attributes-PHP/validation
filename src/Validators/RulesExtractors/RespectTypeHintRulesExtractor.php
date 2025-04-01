@@ -73,7 +73,7 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
             $context->setLocal('property.typeHint', $type->getName(), override: true);
             $rule = $typeExtractor->extract($context);
             $rules[] = $rule;
-            $mapping[$rule->getName()] = $type->getName();
+            $mapping[spl_object_id($rule)] = $type->getName();
         }
 
         return is_a($propertyType, ReflectionUnionType::class) ? new TypeRules\Union($mapping, ...$rules) : new TypeRules\Intersection($mapping, ...$rules);

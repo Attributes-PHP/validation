@@ -1,5 +1,11 @@
 # Attributes Validation
 
+<p align="center">
+    <a href="https://codecov.io/gh/Attributes-PHP/validation"><img src="https://codecov.io/gh/Attributes-PHP/validation/graph/badge.svg?token=9W2JHIDQ2V"/></a>
+    <a href="https://packagist.org/packages/Attributes-PHP/validation"><img alt="Latest Version" src="https://img.shields.io/packagist/v/Attributes-PHP/validation"></a>
+    <a href="https://packagist.org/packages/Attributes-PHP/validation"><img alt="Software License" src="https://img.shields.io/packagist/l/Attributes-PHP/validation"></a>
+</p>
+
 **Attributes Validation** is an easy way to validate and convert raw array's into classes.
 
 ## Features

@@ -23,6 +23,7 @@ test('Valid nested', function () {
             'firstName' => 'Andre',
             'lastName' => 'Gil',
             'post' => [
+                'id' => 1,
                 'title' => 'How to validate data with classes in PHP',
             ],
         ],
@@ -39,7 +40,8 @@ test('Valid nested', function () {
         ->toHaveProperty('lastName', 'Gil')
         ->and($model->profile->post)
         ->toHaveProperty('title', 'How to validate data with classes in PHP')
-        ->toHaveProperty('published', new DateTime('2025-03-31T18:00:00+00:00'));
+        ->toHaveProperty('published', new DateTime('2025-03-31T18:00:00+00:00'))
+        ->toHaveProperty('id', 1);
 
 })
     ->group('validator', 'nested');
