@@ -56,7 +56,7 @@ class AnyClass implements TypeRespectExtractor
             $property = new Property($reflectionProperty, null);
 
             foreach ($rulesExtractor->getRulesFromProperty($property, $context) as $rule) {
-                $isRequired = $this->isRequired($property) && ! $reflectionProperty->isInitialized($model);
+                $isRequired = $this->isRequired($property, $model);
                 $rules[] = new Rules\Key($property->getName(), $rule, $isRequired);
             }
         }
@@ -66,13 +66,13 @@ class AnyClass implements TypeRespectExtractor
         return $ignoreExtraKeys ? new Rules\AllOf(...$rules) : new Rules\KeySet(...$rules);
     }
 
-    private function isRequired(Property $property): bool
+    private function isRequired(Property $property, object $model): bool
     {
         $reflectionProperty = $property->getReflection();
         if ($reflectionProperty->hasDefaultValue()) {
             return false;
         }
 
-        return true;
+        return ! $reflectionProperty->isInitialized($model);
     }
 }

@@ -19,6 +19,6 @@ class RawFloat implements TypeRespectExtractor
      */
     public function extract(Context $context): Validatable
     {
-        return $context->getGlobal('option.strict') ? new Rules\FloatType : new Rules\AllOf(new Rules\FloatVal, new Rules\Not(new Rules\BoolType));
+        return $context->getGlobal('option.strict') ? new Rules\AllOf(new Rules\FloatType, new Rules\Finite) : new Rules\AllOf(new Rules\Finite, new Rules\FloatVal, new Rules\Not(new Rules\BoolType));
     }
 }

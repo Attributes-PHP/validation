@@ -6,9 +6,11 @@ use DateTime;
 
 class Post
 {
+    public int|string $id;
+
     public string $title;
 
-    public DateTime $published;
+    public int|DateTime $published;
 
     public function __construct(?DateTime $published = null)
     {

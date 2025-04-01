@@ -42,5 +42,4 @@ jobs:
         with:
           directory: tests/coverage
           files: tests/coverage/clover.xml
-          flags: unittests
           token: ${{ secrets.CODECOV_TOKEN }}

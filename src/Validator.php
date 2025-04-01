@@ -46,16 +46,14 @@ class Validator implements Validatable
     {
         $validModel = clone $model;
         $reflectionClass = new ReflectionClass($validModel);
-        $errorInfo = new ErrorInfo;
+        $errorInfo = new ErrorInfo($this->context);
+        $this->context->setGlobal(ErrorInfo::class, $errorInfo);
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $propertyName = $reflectionProperty->getName();
 
             if (! array_key_exists($propertyName, $data)) {
                 if (! $reflectionProperty->isInitialized($model)) {
-                    $errorInfo->addErrorMessage("Missing required property '$propertyName'", $propertyName);
-                    if ($this->context->getGlobal('option.stopFirstError')) {
-                        throw new ValidationException('Validation failed', $errorInfo);
-                    }
+                    $errorInfo->addError("Missing required property '$propertyName'");
                 }
 
                 continue;
@@ -71,9 +69,6 @@ class Validator implements Validatable
                 $reflectionProperty->setValue($validModel, $value);
             } catch (BaseException $error) {
                 $errorInfo->addError($error);
-                if ($this->context->getGlobal('option.stopFirstError')) {
-                    throw new ValidationException('Invalid data', $errorInfo, previous: $error);
-                }
             } catch (ReflectionException $error) {
                 throw new ValidationException('Invalid base model property attributes', previous: $error);
             }

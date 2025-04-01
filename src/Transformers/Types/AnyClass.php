@@ -45,7 +45,7 @@ class AnyClass implements TypeCast
 
         $class = new $typeHint;
         $reflectionClass = new ReflectionClass($class);
-        $errorInfo = new ErrorInfo;
+        $errorInfo = $context->getGlobal(ErrorInfo::class);
         $propertyTransformer = $context->getLocal(PropertyTransformer::class);
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $propertyName = $reflectionProperty->getName();

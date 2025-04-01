@@ -53,7 +53,7 @@ abstract class InternalType extends Composite
 
     private function addValidRule(Validatable $rule): void
     {
-        $this->validTypeHints[] = $this->mapping[$rule->getName()];
+        $this->validTypeHints[] = $this->mapping[spl_object_id($rule)];
     }
 
     private function updateExceptionTemplate(ValidationException $exception): void
@@ -80,7 +80,7 @@ abstract class InternalType extends Composite
     {
         foreach ($this->getRules() as $v) {
             if ($v->validate($input)) {
-                $this->validTypeHint = $this->mapping[$v->getName()];
+                $this->validTypeHints = $this->mapping[$v->getName()];
 
                 return true;
             }

@@ -62,6 +62,8 @@ dataset('strict invalid float', [
     '2e3',
     '-4e4',
     '000',
+    3245e9898989898989898989,
+    '3245e9898989898989898989',
 ]);
 
 dataset('strict invalid integer', [
@@ -79,6 +81,8 @@ dataset('strict invalid integer', [
     '2e3',
     '-4e4',
     '000',
+    3245e9898989898989898989,
+    '3245e9898989898989898989',
 ]);
 
 dataset('strict invalid bool', [
