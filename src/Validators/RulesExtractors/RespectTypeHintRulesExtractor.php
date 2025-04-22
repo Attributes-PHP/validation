@@ -95,6 +95,7 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
             'null' => new TypeExtractors\RawNull,
             DateTime::class => new TypeExtractors\DateTime,
             DateTimeInterface::class => new TypeExtractors\DateTime,
+            'interface' => new TypeExtractors\StrictType,
             'default' => new TypeExtractors\AnyClass,
         ];
     }
@@ -109,8 +110,15 @@ class RespectTypeHintRulesExtractor implements PropertyRulesExtractor
         }
 
         $typeHintName = $propertyType->getName();
-        $typeHintName = enum_exists($typeHintName) ? 'enum' : $typeHintName;
         $typeName = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'default';
+        if ($typeName == 'default') {
+            if (enum_exists($typeHintName)) {
+                return $this->typeHintRules['enum'];
+            }
+            if (interface_exists($typeHintName)) {
+                return $this->typeHintRules['interface'];
+            }
+        }
 
         return $this->typeHintRules[$typeName];
     }

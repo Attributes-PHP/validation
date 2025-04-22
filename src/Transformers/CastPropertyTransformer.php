@@ -124,6 +124,7 @@ class CastPropertyTransformer implements PropertyTransformer
             // Class builtins
             DateTime::class => Types\DateTime::class,
             DateTimeInterface::class => Types\DateTime::class,
+            'interface' => Types\StrictType::class,
             // Default casting
             'default' => Types\AnyClass::class,
         ];
@@ -143,6 +144,8 @@ class CastPropertyTransformer implements PropertyTransformer
     {
         if (enum_exists($propertyTypeName)) {
             $propertyTypeName = 'enum';
+        } elseif (interface_exists($propertyTypeName)) {
+            $propertyTypeName = 'interface';
         }
 
         $castClass = $this->mappings[$propertyTypeName] ?? $this->getParentTypeClass($propertyTypeName);

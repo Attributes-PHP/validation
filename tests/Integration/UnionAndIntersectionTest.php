@@ -13,8 +13,13 @@ declare(strict_types=1);
 namespace Attributes\Validation\Tests\Integration;
 
 use Attributes\Validation\Exceptions\ValidationException;
+use Attributes\Validation\Tests\Integration\Models\Complex as Models;
+use Attributes\Validation\Tests\Integration\Models\Complex\LoggerFormatter;
 use Attributes\Validation\Validator;
 use DateTime;
+use stdClass;
+
+/*** Union ***/
 
 // Basics
 
@@ -114,3 +119,30 @@ test('Union with int/DateTime', function ($value) {
 })
     ->with([1, -10, 10e10, 1.1, '100', '10.28', '-98e2', '2050-12-06T00:00:03+00:00', new DateTime])
     ->group('validator', 'union');
+
+/*** Intersection ***/
+
+test('Intersection with Logger&Formatter', function () {
+    $validator = new Validator;
+    $loggerFormatter = new LoggerFormatter;
+    $model = $validator->validate(['value' => $loggerFormatter], new class
+    {
+        public Models\Logger&Models\Formatter $value;
+    });
+    expect($model)
+        ->toBeObject()
+        ->and($model->value)
+        ->toBe($loggerFormatter);
+})
+    ->group('validator', 'intersection');
+
+test('Invalid intersection', function ($value) {
+    $validator = new Validator;
+    $validator->validate(['value' => $value], new class
+    {
+        public Models\Logger&Models\Formatter $value;
+    });
+})
+    ->throws(ValidationException::class, 'Invalid data')
+    ->with([10, 1.4, true, false, null, [[123]], new stdClass, new DateTime, new Models\OnlyLogger, new Models\OnlyFormatter])
+    ->group('validator', 'intersection');
