@@ -11,6 +11,7 @@ require_once __DIR__.'/Integration/Models/Basic/Array.php';
 require_once __DIR__.'/Integration/Models/Basic/Object.php';
 require_once __DIR__.'/Integration/Models/Basic/DateTime.php';
 require_once __DIR__.'/Integration/Models/Basic/Enum.php';
+require_once __DIR__.'/Integration/Models/Complex/Intersection.php';
 
 uses()->group('integration')->in('Integration');
 uses()->group('unit')->in('Unit');
