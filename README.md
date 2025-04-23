@@ -31,25 +31,21 @@ use Respect\Validation\Rules as Rules;
 
 class Person
 {
+    #[Rules\Min(0)]
     public float|int $age;
     public ?DateTime $birthday;
-    #[Rules\NotEmpty]
-    #[Rules\Each(new Rules\StringType)]
-    public array $names;
 }
 
 $rawData = [
-    'age' => '100',
-    'birthday' => '2025-01-01T09:00:00+00:00',
-    'names' => ['André', 'Gil']
+    'age' => '30',
+    'birthday' => '1994-01-01T09:00:00+00:00',
 ];
 
 $validator = new Validator();
 $person = $validator->validate($rawData, new Person);
 
 var_dump($person->age);      // int(100)
-var_dump($person->birthday); // object(DateTime) { ["date"] => string(26) "2025-01-01 09:00:00.000000", (...) }
-var_dump($person->names);    // array(2) { [0]=> string(6) "André" [1]=> string(3) "Gil" }    // object(array) { ["date"] => string(26) "2025-01-01 15:46:55.000000", (...) }
+var_dump($person->birthday); // object(DateTime) { ["date"] => string(26) "1994-01-01 09:00:00.000000", (...) }
 ```
 
 ## Installation
