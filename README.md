@@ -6,12 +6,13 @@
     <a href="https://packagist.org/packages/Attributes-PHP/validation"><img alt="Software License" src="https://img.shields.io/packagist/l/Attributes-PHP/validation"></a>
 </p>
 
-**Attributes Validation** is an easy way to validate and convert raw array's into classes.
+**Attributes Validation** is the Pydantic validation library for PHP which allows you to validate data via type-hinting
 
 ## Features
 
-- Validates data via classes
-- Type hint validation support
+- Validates data via type-hinting
+- Converts raw dictionaries into classes
+- Support for custom validation rules
 
 ## Requirements
 
@@ -26,23 +27,29 @@ We aim to support versions that haven't reached their end-of-life.
 <?php
 
 use Attributes\Validation\Validator;
+use Respect\Validation\Rules as Rules;
 
 class Person
 {
     public float|int $age;
     public ?DateTime $birthday;
+    #[Rules\NotEmpty]
+    #[Rules\Each(new Rules\StringType)]
+    public array $names;
 }
 
 $rawData = [
     'age' => '100',
-    'birthday' => '2025-01-01 15:46:55',
+    'birthday' => '2025-01-01T09:00:00+00:00',
+    'names' => ['André', 'Gil']
 ];
 
 $validator = new Validator();
 $person = $validator->validate($rawData, new Person);
 
 var_dump($person->age);      // int(100)
-var_dump($person->birthday); // object(DateTime) { ["date"] => string(26) "2025-01-01 15:46:55.000000", (...) }
+var_dump($person->birthday); // object(DateTime) { ["date"] => string(26) "2025-01-01 09:00:00.000000", (...) }
+var_dump($person->names);    // array(2) { [0]=> string(6) "André" [1]=> string(3) "Gil" }    // object(array) { ["date"] => string(26) "2025-01-01 15:46:55.000000", (...) }
 ```
 
 ## Installation
@@ -51,4 +58,4 @@ var_dump($person->birthday); // object(DateTime) { ["date"] => string(26) "2025-
 composer require attributes/validation
 ```
 
-FastEndpoints was created by **[André Gil](https://www.linkedin.com/in/andre-gil/)** and is open-sourced software licensed under the **[MIT license](https://opensource.org/licenses/MIT)**.
+Attributes Validation was created by **[André Gil](https://www.linkedin.com/in/andre-gil/)** and is open-sourced software licensed under the **[MIT license](https://opensource.org/licenses/MIT)**.
