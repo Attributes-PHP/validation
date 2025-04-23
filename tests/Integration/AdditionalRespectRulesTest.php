@@ -17,8 +17,8 @@ use Attributes\Validation\Validator;
 use Respect\Validation\Rules as Rules;
 use stdClass;
 
-test('Valid uuid', function (string $uuid) {
-    $validator = new Validator;
+test('Valid uuid', function (string $uuid, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
     $model = $validator->validate(['value' => $uuid], new class
     {
         #[Rules\Uuid]
@@ -29,10 +29,11 @@ test('Valid uuid', function (string $uuid) {
         ->toHaveProperty('value', $uuid);
 })
     ->with(['7dd1eab6-e8ed-40c9-910c-57dc725066d5', '569f5e32-1f4f-11f0-9cd2-0242ac120002'])
+    ->with([true, false])
     ->group('validator', 'additional rules');
 
-test('Invalid uuid', function ($uuid) {
-    $validator = new Validator;
+test('Invalid uuid', function ($uuid, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
     $validator->validate(['value' => $uuid], new class
     {
         #[Rules\Uuid]
@@ -41,10 +42,11 @@ test('Invalid uuid', function ($uuid) {
 })
     ->throws(ValidationException::class, 'Invalid data')
     ->with(['7dd1eab6-e8ed', '', null, 'Hello world', '112', 123, 15.23, [['hello']], new stdClass])
+    ->with([true, false])
     ->group('validator', 'additional rules');
 
-test('Valid array of numbers', function (array $value) {
-    $validator = new Validator;
+test('Valid array of numbers', function (array $value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
     $model = $validator->validate(['value' => $value], new class
     {
         #[Rules\NotEmpty]
@@ -56,10 +58,11 @@ test('Valid array of numbers', function (array $value) {
         ->toHaveProperty('value', $value);
 })
     ->with([[[1, -15, 1.569]], [['1', '1.89', '-13', 18, -5.1]]])
+    ->with([true, false])
     ->group('validator', 'additional rules');
 
-test('Invalid array of numbers', function (array $value) {
-    $validator = new Validator;
+test('Invalid array of numbers', function (array $value, bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
     $model = $validator->validate(['value' => $value], new class
     {
         #[Rules\NotEmpty]
@@ -72,4 +75,5 @@ test('Invalid array of numbers', function (array $value) {
 })
     ->throws(ValidationException::class, 'Invalid data')
     ->with([[[1, 'hello world', 1.569]], [[['another array'], '1.89', '-13', 18, -5.1]], [[]]])
+    ->with([true, false])
     ->group('validator', 'additional rules');
