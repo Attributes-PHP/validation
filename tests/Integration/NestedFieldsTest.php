@@ -67,19 +67,19 @@ test('Invalid strict nested', function () {
     ->throws(ValidationException::class, 'Invalid data')
     ->group('validator', 'nested');
 
-test('Invalid nested', function (bool $isStrict) {
+test('Invalid nested post', function (array $post, bool $isStrict) {
     $validator = new Validator(strict: $isStrict);
     $data = [
         'profile' => [
             'firstName' => 'Andre',
-            'post' => [
-                'id' => 'Invalid integer',
-            ],
+            'lastName' => 'Gil',
+            'post' => $post,
         ],
         'userType' => 'moderator',
     ];
     $validator->validate($data, new Models\User);
 })
+    ->with([[[]], [['id' => 1, 'title' => '']], [['id' => 10, 'title' => 'Title', 'published' => -10]]])
     ->with([true, false])
     ->throws(ValidationException::class, 'Invalid data')
     ->group('validator', 'nested');
