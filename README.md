@@ -6,7 +6,7 @@
     <a href="https://packagist.org/packages/Attributes-PHP/validation"><img alt="Software License" src="https://img.shields.io/packagist/l/Attributes-PHP/validation"></a>
 </p>
 
-**Attributes Validation** is the Pydantic validation library for PHP which allows you to validate data via type-hinting
+**Attributes Validation** is the Pydantic validation library for PHP which allows you to validate data via type hints
 
 ## Features
 
