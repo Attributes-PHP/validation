@@ -107,7 +107,7 @@ dataset('invalid enum', [
     (object) [[1, 2, 3], [1, 2, 3], [1, 2, 3]],
     new DateTime,
     '6/23/2013',
-    [1, 2, 3],
+    [[1, 2, 3]],
     new class {},
     Models\RawStrEnum::ADMIN,
 ]);
@@ -126,7 +126,7 @@ dataset('invalid string enum', [
     (object) [[1, 2, 3], [1, 2, 3], [1, 2, 3]],
     new DateTime,
     '6/23/2013',
-    [1, 2, 3],
+    [[1, 2, 3]],
     new class {},
     Models\RawEnum::ADMIN,
 ]);

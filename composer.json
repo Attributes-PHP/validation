@@ -24,8 +24,7 @@
     },
     "require-dev": {
         "laravel/pint": "*",
-        "pestphp/pest-plugin-parallel": "^1.2",
-        "pestphp/pest": "^1.23"
+        "pestphp/pest": "^2.36"
     },
     "scripts": {
         "lint": "./vendor/bin/pint --config pint.json",

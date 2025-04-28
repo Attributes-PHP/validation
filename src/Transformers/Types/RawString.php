@@ -29,6 +29,14 @@ class RawString implements TypeCast
             return is_string($value) ? $value : throw new TransformException('Invalid string');
         }
 
+        if (is_array($value)) {
+            throw new TransformException('Invalid string');
+        }
+
+        if (is_object($value) && !method_exists($value, '__toString' )) {
+            throw new TransformException('Invalid string');
+        }
+
         try {
             return (string) $value;
         } catch (Throwable $e) {
