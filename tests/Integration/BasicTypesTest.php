@@ -467,8 +467,8 @@ test('Invalid enum', function ($value, bool $isStrict) {
     $validator = new Validator(strict: $isStrict);
     $validator->validate(['value' => $value], new Models\Enum);
 })
-    ->with('invalid enum')
     ->throws(ValidationException::class, 'Invalid data')
+    ->with('invalid enum')
     ->with([true, false])
     ->group('validator', 'basic', 'enum');
 
