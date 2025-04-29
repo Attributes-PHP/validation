@@ -4,6 +4,8 @@
  * Holds interface for validating data into base models
  */
 
+declare(strict_types=1);
+
 namespace Attributes\Validation;
 
 use Attributes\Validation\Exceptions\TransformException;

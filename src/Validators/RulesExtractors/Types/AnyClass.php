@@ -4,6 +4,8 @@
  * Holds logic validation rules used to verify if a given value is a valid class or has enough properties to build that class
  */
 
+declare(strict_types=1);
+
 namespace Attributes\Validation\Validators\RulesExtractors\Types;
 
 use Attributes\Validation\Context;
