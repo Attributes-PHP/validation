@@ -29,7 +29,7 @@ class RawFloat implements TypeCast
             return is_float($value) ? $value : throw new TransformException('Invalid floating point');
         }
 
-        if (!is_numeric($value)) {
+        if (! is_numeric($value)) {
             throw new TransformException('Invalid floating point');
         }
 

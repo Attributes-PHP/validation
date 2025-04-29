@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Attributes\Validation\Validators\RulesExtractors;
 
 use Attributes\Validation\Context;

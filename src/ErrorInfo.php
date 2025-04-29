@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Holds logic for nested error logic
  *
@@ -23,8 +25,8 @@
 
 namespace Attributes\Validation;
 
-use Attributes\Validation\Exceptions\BaseException;
 use Attributes\Validation\Exceptions\ValidationException;
+use Exception;
 
 class ErrorInfo
 {
@@ -53,12 +55,12 @@ class ErrorInfo
     /**
      * Adds a validation error
      *
-     * @param  BaseException|string  $error  - The validation error
+     * @param  Exception|string  $error  - The validation error
      *
      * @throws ValidationException - When option.stopFirstError is true
      * @throws Exceptions\ContextPropertyException
      */
-    public function addError(BaseException|string $error): void
+    public function addError(Exception|string $error): void
     {
         $propertyPath = $this->context->getOptionalGlobal('propertyPath', []);
         $errors = &$this->errors;
