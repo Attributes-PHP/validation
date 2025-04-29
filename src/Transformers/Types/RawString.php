@@ -33,7 +33,7 @@ class RawString implements TypeCast
             throw new TransformException('Invalid string');
         }
 
-        if (is_object($value) && !method_exists($value, '__toString' )) {
+        if (is_object($value) && ! method_exists($value, '__toString')) {
             throw new TransformException('Invalid string');
         }
 

@@ -29,7 +29,7 @@ class RawInt implements TypeCast
             return is_int($value) ? $value : throw new TransformException('Invalid integer');
         }
 
-        if (!is_numeric($value)) {
+        if (! is_numeric($value)) {
             throw new TransformException('Invalid integer');
         }
 

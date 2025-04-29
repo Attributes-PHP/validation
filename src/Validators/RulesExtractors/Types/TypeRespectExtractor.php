@@ -4,6 +4,8 @@
  * Holds interface for casting a given value
  */
 
+declare(strict_types=1);
+
 namespace Attributes\Validation\Validators\RulesExtractors\Types;
 
 use Attributes\Validation\Context;
