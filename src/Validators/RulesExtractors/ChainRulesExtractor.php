@@ -10,12 +10,7 @@ use Generator;
 
 class ChainRulesExtractor implements PropertyRulesExtractor
 {
-    private array $rulesExtractors;
-
-    public function __construct(...$rulesExtractors)
-    {
-        $this->rulesExtractors = $rulesExtractors;
-    }
+    private array $rulesExtractors = [];
 
     /**
      * Yields all validation rules from multiple rules extractors

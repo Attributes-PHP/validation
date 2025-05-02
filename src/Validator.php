@@ -25,13 +25,15 @@ class Validator implements Validatable
     /**
      * @throws ContextPropertyException
      */
-    public function __construct(?PropertyValidator $validator = null, ?PropertyTransformer $transformer = null, bool $stopFirstError = false, bool $strict = false, ?Context $context = null)
+    public function __construct(?PropertyValidator $validator = null, ?PropertyTransformer $transformer = null, bool $stopFirstError = false, bool $strict = false, bool $useCache = false, ?Context $context = null)
     {
-        $this->validator = $validator ?? new RespectPropertyValidator;
-        $this->transformer = $transformer ?? new CastPropertyTransformer;
         $this->context = $context ?? new Context;
         $this->context->setGlobal('option.stopFirstError', $stopFirstError);
         $this->context->setGlobal('option.strict', $strict);
+        $this->context->setGlobal('option.cache.enabled', $useCache);
+
+        $this->validator = $validator ?? new RespectPropertyValidator(context: $this->context);
+        $this->transformer = $transformer ?? new CastPropertyTransformer;
     }
 
     /**
@@ -62,7 +64,7 @@ class Validator implements Validatable
             }
 
             $propertyValue = $data[$propertyName];
-            $property = new Property($reflectionProperty, $propertyValue);
+            $property = new Property($reflectionProperty, $propertyValue, $model::class);
             $this->context->setGlobal(Property::class, $property, override: true);
             try {
                 $this->validator->validate($property, $this->context);
@@ -81,5 +83,13 @@ class Validator implements Validatable
         }
 
         return $validModel;
+    }
+
+    /**
+     * @internal
+     */
+    public function getContext(): Context
+    {
+        return $this->context;
     }
 }

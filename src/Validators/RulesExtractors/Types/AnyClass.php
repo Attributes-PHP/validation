@@ -53,9 +53,9 @@ class AnyClass implements TypeRespectExtractor
         $rules = [];
         $model = new $typeHint;
         $reflectionClass = new ReflectionClass($typeHint);
-        $rulesExtractor = $context->getLocal(PropertyRulesExtractor::class);
+        $rulesExtractor = $context->getGlobal(PropertyRulesExtractor::class);
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
-            $property = new Property($reflectionProperty, null);
+            $property = new Property($reflectionProperty, null, $typeHint);
 
             foreach ($rulesExtractor->getRulesFromProperty($property, $context) as $rule) {
                 $isRequired = $this->isRequired($property, $model);

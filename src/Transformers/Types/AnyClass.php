@@ -55,7 +55,7 @@ class AnyClass implements TypeCast
                 continue;
             }
 
-            $property = new Property($reflectionProperty, $value[$propertyName]);
+            $property = new Property($reflectionProperty, $value[$propertyName], $typeHint);
             try {
                 $propertyValue = $propertyTransformer->transform($property, $context);
                 $reflectionProperty->setValue($class, $propertyValue);

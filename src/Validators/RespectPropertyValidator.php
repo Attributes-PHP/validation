@@ -9,6 +9,7 @@ use Attributes\Validation\ErrorInfo;
 use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Property;
+use Attributes\Validation\Validators\RulesExtractors\CacheRulesExtractor;
 use Attributes\Validation\Validators\RulesExtractors\ChainRulesExtractor;
 use Attributes\Validation\Validators\RulesExtractors\PropertyRulesExtractor;
 use Attributes\Validation\Validators\RulesExtractors\RespectAttributesRulesExtractor;
@@ -21,9 +22,10 @@ class RespectPropertyValidator implements PropertyValidator
 {
     private PropertyRulesExtractor $extractor;
 
-    public function __construct(?PropertyRulesExtractor $extractor = null)
+    public function __construct(Context $context, ?PropertyRulesExtractor $extractor = null)
     {
-        $this->extractor = $extractor ?? $this->getDefaultExtractor();
+        $this->extractor = $extractor ?? $this->getDefaultExtractor($context);
+        $context->setGlobal(PropertyRulesExtractor::class, $this->extractor, override: true);
 
         Factory::setDefaultInstance(
             (new Factory)
@@ -39,7 +41,6 @@ class RespectPropertyValidator implements PropertyValidator
      */
     public function validate(Property $property, Context $context): void
     {
-        $context->setLocal(PropertyRulesExtractor::class, $this->extractor, override: true);
         $errorInfo = $context->getGlobal(ErrorInfo::class);
         foreach ($this->extractor->getRulesFromProperty($property, $context) as $rule) {
             try {
@@ -55,12 +56,19 @@ class RespectPropertyValidator implements PropertyValidator
         }
     }
 
-    private function getDefaultExtractor(): PropertyRulesExtractor
+    /**
+     * @throws ContextPropertyException
+     */
+    private function getDefaultExtractor(Context $context): PropertyRulesExtractor
     {
         $chainRulesExtractor = new ChainRulesExtractor;
         $chainRulesExtractor->add(new RespectTypeHintRulesExtractor);
         $chainRulesExtractor->add(new RespectAttributesRulesExtractor);
 
-        return $chainRulesExtractor;
+        if (! $context->getGlobal('option.cache.enabled')) {
+            return $chainRulesExtractor;
+        }
+
+        return new CacheRulesExtractor($chainRulesExtractor);
     }
 }
