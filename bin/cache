@@ -1,0 +1,18 @@
+#!/usr/bin/env php
+<?php declare(strict_types=1);
+
+use Attributes\Validation\Validator;
+use Attributes\Validation\Cache\CacheGenerator;
+
+(static function () {
+    $vendorPath = dirname(__DIR__, 4).'/vendor/autoload.php';
+    if (file_exists($vendorPath)) {
+        include_once $vendorPath;
+    } else {
+        include_once dirname(__DIR__).'/vendor/autoload.php';;
+    }
+
+    $validator = new Validator();
+    $cacheGenerator = new CacheGenerator($validator);
+    $cacheGenerator->generate();
+})();

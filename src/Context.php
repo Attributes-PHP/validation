@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Attributes\Validation;
 
 use Attributes\Validation\Exceptions\ContextPropertyException;
-use Attributes\Validation\Exceptions\ValidationException;
 
 class Context
 {
@@ -43,7 +42,7 @@ class Context
     }
 
     /**
-     * @throws ValidationException
+     * @throws ContextPropertyException
      */
     public function getOptionalGlobal(string $propertyName, mixed $defaultValue = null): mixed
     {
