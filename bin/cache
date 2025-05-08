@@ -1,18 +1,46 @@
 #!/usr/bin/env php
 <?php declare(strict_types=1);
 
+use Attributes\Validation\Context;
+use Attributes\Validation\Exceptions\CacheException;
 use Attributes\Validation\Validator;
 use Attributes\Validation\Cache\CacheGenerator;
 
-(static function () {
-    $vendorPath = dirname(__DIR__, 4).'/vendor/autoload.php';
-    if (file_exists($vendorPath)) {
-        include_once $vendorPath;
-    } else {
-        include_once dirname(__DIR__).'/vendor/autoload.php';;
-    }
+$vendorPath = dirname(__DIR__, 4).'/vendor/autoload.php';
+if (file_exists($vendorPath)) {
+    include_once $vendorPath;
+} else {
+    include_once dirname(__DIR__).'/vendor/autoload.php';;
+}
 
-    $validator = new Validator();
-    $cacheGenerator = new CacheGenerator($validator);
-    $cacheGenerator->generate();
-})();
+$longOpts  = [
+    "models-dir:",
+    "strict",
+    "output::",
+    "force-removal",
+];
+$options = getopt("", $longOpts);
+
+if (! isset($options['models-dir']) || !$options['models-dir']) {
+    throw new CacheException("Missing --models-dir option(s)");
+}
+
+$modelsDirs = is_string($options['models-dir']) ? [$options['models-dir']] : $options['models-dir'];
+foreach ($modelsDirs as $modelDir) {
+    if (is_dir($modelDir)) continue;
+
+    throw new CacheException("Invalid directory '$modelDir' passed via --models-dir option");
+}
+
+$isStrict = isset($options['strict']);
+$context = new Context();
+$cacheFilePath = $options['output'] ?? './cache/rules.php';
+$cacheFilePath = $cacheFilePath ?: './cache/rules.php';
+$context->setGlobal('option.cache.filePath', $cacheFilePath);
+$context->setGlobal('option.cache.forceRemoval', isset($options['force-removal']));
+
+$validator = new Validator(strict: $isStrict, useCache: false, context: $context);
+
+$cacheGenerator = new CacheGenerator($validator, $modelsDirs);
+
+$cacheGenerator->generate();

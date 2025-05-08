@@ -18,7 +18,7 @@ class FileBasedCache implements Cache
 
     private bool $forceRemoval;
 
-    private ?array $data;
+    private ?array $data = null;
 
     public function __construct(string $filePath, bool $forceRemoval = false)
     {
@@ -83,7 +83,7 @@ class FileBasedCache implements Cache
 
         $this->forceRemoval = false;  // Avoid deleting file multiple times
         $cacheDir = dirname($this->filePath);
-        if (! mkdir($cacheDir, 0744, true)) {
+        if (! file_exists($cacheDir) && ! mkdir($cacheDir, 0744, true)) {
             throw new CacheException("Unable to create cache directory $cacheDir");
         }
 
@@ -95,6 +95,7 @@ class FileBasedCache implements Cache
             throw new CacheException("Unable to export rules for $propertyKey");
         }
 
+        $exportedRules = '<?php return '.$exportedRules.';';
         if (file_put_contents($this->filePath, $exportedRules) === false) {
             throw new CacheException("Unable to cache rules for $propertyKey to $this->filePath");
         }

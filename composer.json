@@ -1,5 +1,5 @@
 {
-    "name": "attributes/validation",
+    "name": "attributes-php/validation",
     "type": "library",
     "description": "The PHP Pydantic validation library which supports data validation via type-hinting",
     "keywords": [
