@@ -51,7 +51,7 @@ var_dump($person->birthday); // object(DateTime) { ["date"] => string(26) "1994-
 ## Installation
 
 ```bash
-composer require attributes/validation
+composer require attributes-php/validation
 ```
 
 Attributes Validation was created by **[André Gil](https://www.linkedin.com/in/andre-gil/)** and is open-sourced software licensed under the **[MIT license](https://opensource.org/licenses/MIT)**.
