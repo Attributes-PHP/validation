@@ -22,12 +22,13 @@
             "Attributes\\Validation\\Tests\\": "tests/"
         },
         "classmap": [
-            "tests/Integration/Models"
+            "tests/Models"
         ]
     },
     "require-dev": {
         "laravel/pint": "*",
-        "pestphp/pest": "^2.36"
+        "pestphp/pest": "^2.36",
+        "phpbench/phpbench": "^1.4"
     },
     "scripts": {
         "lint": "./vendor/bin/pint --config pint.json",

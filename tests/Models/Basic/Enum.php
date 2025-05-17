@@ -1,6 +1,6 @@
 <?php
 
-namespace Attributes\Validation\Tests\Integration\Models\Basic;
+namespace Attributes\Validation\Tests\Models\Basic;
 
 enum RawEnum
 {

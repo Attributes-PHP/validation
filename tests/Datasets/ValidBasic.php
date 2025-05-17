@@ -1,6 +1,6 @@
 <?php
 
-use Attributes\Validation\Tests\Integration\Models\Basic as Models;
+use Attributes\Validation\Tests\Models\Basic as Models;
 
 dataset('datetime', [
     '2025-03-06T08:57:06+00:00',

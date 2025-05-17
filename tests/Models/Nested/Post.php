@@ -1,6 +1,6 @@
 <?php
 
-namespace Attributes\Validation\Tests\Integration\Models\Nested;
+namespace Attributes\Validation\Tests\Models\Nested;
 
 use DateTime;
 use Respect\Validation\Rules as Rules;
