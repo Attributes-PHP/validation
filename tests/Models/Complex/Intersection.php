@@ -1,6 +1,6 @@
 <?php
 
-namespace Attributes\Validation\Tests\Integration\Models\Complex;
+namespace Attributes\Validation\Tests\Models\Complex;
 
 interface Logger
 {

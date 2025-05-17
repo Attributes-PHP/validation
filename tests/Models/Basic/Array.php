@@ -1,8 +1,10 @@
 <?php
 
-namespace Attributes\Validation\Tests\Integration\Models\Basic;
+namespace Attributes\Validation\Tests\Models\Basic;
 
-class Arr
+use Attributes\Validation\Cache\Model;
+
+class Arr implements Model
 {
     public array $value;
 }

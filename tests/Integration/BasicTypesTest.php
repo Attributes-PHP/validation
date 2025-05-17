@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace Attributes\Validation\Tests\Integration;
 
 use Attributes\Validation\Exceptions\ValidationException;
-use Attributes\Validation\Tests\Integration\Models\Basic as Models;
+use Attributes\Validation\Tests\Models\Basic as Models;
 use Attributes\Validation\Validator;
 use DateTime;
 

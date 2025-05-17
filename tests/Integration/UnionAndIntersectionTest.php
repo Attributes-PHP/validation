@@ -13,8 +13,7 @@ declare(strict_types=1);
 namespace Attributes\Validation\Tests\Integration;
 
 use Attributes\Validation\Exceptions\ValidationException;
-use Attributes\Validation\Tests\Integration\Models\Complex as Models;
-use Attributes\Validation\Tests\Integration\Models\Complex\LoggerFormatter;
+use Attributes\Validation\Tests\Models\Complex as Models;
 use Attributes\Validation\Validator;
 use DateTime;
 use stdClass;
@@ -124,7 +123,7 @@ test('Union with int/DateTime', function ($value) {
 
 test('Intersection with Logger&Formatter', function () {
     $validator = new Validator;
-    $loggerFormatter = new LoggerFormatter;
+    $loggerFormatter = new Models\LoggerFormatter;
     $model = $validator->validate(['value' => $loggerFormatter], new class
     {
         public Models\Logger&Models\Formatter $value;
