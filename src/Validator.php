@@ -4,51 +4,66 @@ declare(strict_types=1);
 
 namespace Attributes\Validation;
 
-use Attributes\Validation\Exceptions\BaseException;
 use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\ValidationException;
-use Attributes\Validation\Transformers\CastPropertyTransformer;
-use Attributes\Validation\Transformers\PropertyTransformer;
+use Attributes\Validation\Validators\AttributesValidator;
+use Attributes\Validation\Validators\ChainValidator;
 use Attributes\Validation\Validators\PropertyValidator;
-use Attributes\Validation\Validators\RespectPropertyValidator;
+use Attributes\Validation\Validators\TypeHintValidator;
 use ReflectionClass;
 use ReflectionException;
+use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
+use Respect\Validation\Factory;
 
 class Validator implements Validatable
 {
-    private PropertyTransformer $transformer;
+    private Context $context;
 
     private PropertyValidator $validator;
-
-    private Context $context;
 
     /**
      * @throws ContextPropertyException
      */
-    public function __construct(?PropertyValidator $validator = null, ?PropertyTransformer $transformer = null, bool $stopFirstError = false, bool $strict = false, bool $useCache = false, ?Context $context = null)
+    public function __construct(?PropertyValidator $validator = null, bool $stopFirstError = false, bool $strict = false, ?Context $context = null)
     {
         $this->context = $context ?? new Context;
         $this->context->setGlobal('option.stopFirstError', $stopFirstError);
         $this->context->setGlobal('option.strict', $strict);
-        $this->context->setGlobal('option.cache.enabled', $useCache);
+        $this->validator = $this->context->getOptionalGlobal(PropertyValidator::class, $validator) ?? $this->getDefaultPropertyValidator();
+        $this->context->setGlobal(PropertyValidator::class, $this->validator);
 
-        $this->validator = $validator ?? new RespectPropertyValidator(context: $this->context);
-        $this->transformer = $transformer ?? new CastPropertyTransformer;
+        $factory = $this->context->getOptionalGlobal(Factory::class, new Factory);
+        Factory::setDefaultInstance(
+            $factory
+                ->withRuleNamespace('Attributes\\Validation\\RulesExtractors\\Rules')
+                ->withExceptionNamespace('Attributes\\Validation\\RulesExtractors\\Rules\\Exceptions')
+        );
     }
 
     /**
      * Validates a given data according to a given model
      *
      * @param  array  $data  - Data to validate
-     * @param  object  $model  - Model to validate against
+     * @param  string|object  $model  - Model to validate against
      * @return object - Model populated with the validated data
      *
      * @throws ValidationException - If validation fails
      * @throws ContextPropertyException - If unable to retrieve a given context property
+     * @throws ReflectionException
      */
-    public function validate(array $data, object $model): object
+    public function validate(array $data, string|object $model): object
     {
-        $validModel = clone $model;
+        $currentLevel = $this->context->getOptionalGlobal('internal.recursionLevel', 0);
+        $maxRecursionLevel = $this->context->getOptionalGlobal('internal.maxRecursionLevel', 30);
+        if ($maxRecursionLevel > 0 && $currentLevel > $maxRecursionLevel) {
+            throw new ValidationException("Maximum recursion level reached. Current max recursion level is {$maxRecursionLevel}");
+        }
+
+        if (is_string($model) && ! class_exists($model)) {
+            throw new ValidationException("Unable to find model class '$model'");
+        }
+
+        $validModel = is_string($model) ? new $model : $model;
         $reflectionClass = new ReflectionClass($validModel);
         $errorInfo = new ErrorInfo($this->context);
         $this->context->setGlobal(ErrorInfo::class, $errorInfo);
@@ -56,7 +71,7 @@ class Validator implements Validatable
             $propertyName = $reflectionProperty->getName();
 
             if (! array_key_exists($propertyName, $data)) {
-                if (! $reflectionProperty->isInitialized($model)) {
+                if (! $reflectionProperty->isInitialized($validModel)) {
                     $errorInfo->addError("Missing required property '$propertyName'");
                 }
 
@@ -64,17 +79,14 @@ class Validator implements Validatable
             }
 
             $propertyValue = $data[$propertyName];
-            $property = new Property($reflectionProperty, $propertyValue, $model::class);
+            $property = new Property($reflectionProperty, $propertyValue, $validModel::class);
             $this->context->setGlobal(Property::class, $property, override: true);
+
             try {
                 $this->validator->validate($property, $this->context);
-                $this->context->resetLocal();
-                $value = $this->transformer->transform($property, $this->context);
-                $reflectionProperty->setValue($validModel, $value);
-            } catch (BaseException $error) {
+                $reflectionProperty->setValue($validModel, $property->getValue());
+            } catch (ValidationException|RespectValidationException $error) {
                 $errorInfo->addError($error);
-            } catch (ReflectionException $error) {
-                throw new ValidationException('Invalid base model property attributes', previous: $error);
             }
         }
 
@@ -85,11 +97,12 @@ class Validator implements Validatable
         return $validModel;
     }
 
-    /**
-     * @internal
-     */
-    public function getContext(): Context
+    private function getDefaultPropertyValidator(): PropertyValidator
     {
-        return $this->context;
+        $chainRulesExtractor = new ChainValidator;
+        $chainRulesExtractor->add(new TypeHintValidator);
+        $chainRulesExtractor->add(new AttributesValidator);
+
+        return $chainRulesExtractor;
     }
 }

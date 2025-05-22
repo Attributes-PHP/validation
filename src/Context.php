@@ -12,13 +12,10 @@ class Context
 
     public array $local = [];
 
-    /**
-     * @throws ContextPropertyException
-     */
     public function setGlobal(string $propertyName, mixed $value, bool $override = false): void
     {
         if (! $override && $this->hasGlobal($propertyName)) {
-            throw new ContextPropertyException('Property '.$propertyName.' already exists.');
+            return;
         }
 
         $this->global[$propertyName] = $value;
@@ -58,13 +55,10 @@ class Context
         return array_key_exists($propertyName, $this->global);
     }
 
-    /**
-     * @throws ContextPropertyException
-     */
     public function setLocal(string $propertyName, mixed $value, bool $override = false): void
     {
         if (! $override && $this->hasGlobal($propertyName)) {
-            throw new ContextPropertyException('Property '.$propertyName.' already exists.');
+            return;
         }
 
         $this->local[$propertyName] = $value;

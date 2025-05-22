@@ -2,9 +2,7 @@
 
 namespace Attributes\Validation\Tests\Models\Basic;
 
-use Attributes\Validation\Cache\Model;
-
-class Arr implements Model
+class Arr
 {
     public array $value;
 }
