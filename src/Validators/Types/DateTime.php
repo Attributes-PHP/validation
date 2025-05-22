@@ -11,6 +11,7 @@ namespace Attributes\Validation\Validators\Types;
 use Attributes\Validation\Context;
 use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Property;
+use DateTime as BaseDateTime;
 use DateTimeInterface;
 use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
 use Respect\Validation\Rules as Rules;
@@ -29,6 +30,18 @@ class DateTime implements BaseType
      */
     public function validate(Property $property, Context $context): void
     {
+        $value = $property->getValue();
+        if ($value instanceof BaseDateTime) {
+            return;
+        }
+
+        if ($value instanceof DateTimeInterface) {
+            $value = BaseDateTime::createFromInterface($value);
+            $property->setValue($value);
+
+            return;
+        }
+
         $reflection = $property->getReflection();
         $datetimeAttributes = $reflection->getAttributes(Rules\DateTime::class);
         if (count($datetimeAttributes) > 0) {
@@ -36,6 +49,10 @@ class DateTime implements BaseType
         }
 
         $format = $context->getOptionalGlobal('datetime.format', DateTimeInterface::ATOM);
-        v::anyOf(v::dateTime($format), v::instance(DateTimeInterface::class))->assert($property->getValue());
+        v::dateTime($format)->assert($property->getValue());
+
+        $timezone = $context->getOptionalGlobal('datetime.timezone');
+        $value = BaseDateTime::createFromFormat($format, (string) $value, $timezone);
+        $property->setValue($value);
     }
 }

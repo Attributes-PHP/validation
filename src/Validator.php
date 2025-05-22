@@ -12,8 +12,8 @@ use Attributes\Validation\Validators\PropertyValidator;
 use Attributes\Validation\Validators\TypeHintValidator;
 use ReflectionClass;
 use ReflectionException;
-use Respect\Validation\Factory;
 use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
+use Respect\Validation\Factory;
 
 class Validator implements Validatable
 {
