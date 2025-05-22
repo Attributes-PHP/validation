@@ -31,6 +31,11 @@ class Property
         return $this->value;
     }
 
+    public function setValue(mixed $value): void
+    {
+        $this->value = $value;
+    }
+
     public function getReflection(): ReflectionProperty
     {
         return $this->property;

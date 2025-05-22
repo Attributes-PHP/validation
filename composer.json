@@ -32,6 +32,7 @@
     },
     "scripts": {
         "lint": "./vendor/bin/pint --config pint.json",
+        "benchmark": "./vendor/bin/phpbench run tests/Benchmark/Benchmark.php",
         "test:lint": "./vendor/bin/pint --test",
         "test:coverage": "./vendor/bin/pest --coverage --parallel",
         "test:unit": "./vendor/bin/pest --colors=always --exclude-group=integration --parallel",
