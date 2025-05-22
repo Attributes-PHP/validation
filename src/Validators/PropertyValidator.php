@@ -6,13 +6,15 @@ namespace Attributes\Validation\Validators;
 
 use Attributes\Validation\Context;
 use Attributes\Validation\Property;
+use Respect\Validation\Exceptions\ValidationException;
 
 interface PropertyValidator
 {
     /**
-     * Validates a given property
+     * @param  Property  $property  - Property to be validated
+     * @param  Context  $context  - The current context
      *
-     * @param  Property  $property  - The property to be validated
+     * @throws ValidationException - if value not valid
      */
     public function validate(Property $property, Context $context): void;
 }

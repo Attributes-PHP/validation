@@ -2,8 +2,9 @@
 
 namespace Attributes\Validation\Tests\Benchmark;
 
-use Attributes\Validation\Tests\Models\Nested as Models;
+use Attributes\Validation\Tests\Models as Models;
 use Attributes\Validation\Validator;
+use Generator;
 use PhpBench\Attributes as Bench;
 
 class BenchValidator
@@ -22,18 +23,7 @@ class BenchValidator
                 'second' => 2,
             ],
         ];
-        $validator->validate($data, new class
-        {
-            public bool $bool;
-
-            public int $int;
-
-            public float $float;
-
-            public array $array;
-
-            public object $object;
-        });
+        $validator->validate($data, new Models\Complex\MultipleBasic);
     }
 
     #[Bench\Iterations(100)]
@@ -46,16 +36,7 @@ class BenchValidator
             'floatArray' => ['-10e5'],
             'objectInt' => ['2', '3', '4', '5', '6', '7', '8', '9'],
         ];
-        $validator->validate($data, new class
-        {
-            public bool|int $boolInt;
-
-            public int|float $intFloat;
-
-            public float|array $floatArray;
-
-            public object|int $objectInt;
-        });
+        $validator->validate($data, new Models\Complex\BasicUnion);
     }
 
     #[Bench\Iterations(100)]
@@ -75,6 +56,12 @@ class BenchValidator
             'userType' => 'moderator',
             'createdAt' => '2025-03-28T16:00:00+00:00',
         ];
-        $validator->validate($data, new Models\User);
+        $validator->validate($data, new Models\Nested\User);
+    }
+
+    public function getStrictOption(): Generator
+    {
+        yield 'strict' => ['isStrict' => true];
+        yield 'loose' => ['isStrict' => false];
     }
 }

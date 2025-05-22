@@ -1,33 +1,34 @@
 <?php
 
 /**
- * Holds logic validation rules used to verify if a given value is an enum
+ * Holds logic to check if a given value belongs to a given enumeration
  */
 
 declare(strict_types=1);
 
-namespace Attributes\Validation\Validators\RulesExtractors\Types;
+namespace Attributes\Validation\Validators\Types;
 
 use Attributes\Validation\Context;
 use Attributes\Validation\Exceptions\ContextPropertyException;
+use Attributes\Validation\Property;
 use ReflectionEnum;
 use ReflectionException;
-use Respect\Validation\Exceptions\ComponentException;
-use Respect\Validation\Rules as Rules;
-use Respect\Validation\Validatable;
+use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
+use Respect\Validation\Validator as v;
 
-class RawEnum implements TypeRespectExtractor
+class RawEnum implements BaseType
 {
     /**
-     * Retrieves the validation rules to check if a value is null
+     * Validates that a given property value belongs to a given enumeration
      *
+     * @param  Property  $property  - Property to be validated
      * @param  Context  $context  - Validation context
      *
-     * @throws ContextPropertyException - When unable to find required context property
-     * @throws ReflectionException - When given type-hint property is not an enum
-     * @throws ComponentException
+     * @throws RespectValidationException - If not valid
+     * @throws ContextPropertyException
+     * @throws ReflectionException
      */
-    public function extract(Context $context): Validatable
+    public function validate(Property $property, Context $context): void
     {
         $typeHint = $context->getLocal('property.typeHint');
         $reflectionEnum = new ReflectionEnum($typeHint);
@@ -40,6 +41,6 @@ class RawEnum implements TypeRespectExtractor
         // Int enum's do fail equals validation with some invalid data e.g. ['this is an array of strings']
         $isStrict = $reflectionEnum->getBackingType() && $reflectionEnum->getBackingType()->getName() == 'int' ? true : $isStrict;
 
-        return new Rules\AnyOf(new Rules\Instance($typeHint), new Rules\In($validOptions, compareIdentical: $isStrict));
+        v::anyOf(v::instance($typeHint), v::in($validOptions, compareIdentical: $isStrict))->assert($property->getValue());
     }
 }
