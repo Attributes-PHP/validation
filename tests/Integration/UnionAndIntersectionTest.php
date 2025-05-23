@@ -55,12 +55,11 @@ test('Union with float/int/string', function ($value) {
     {
         public float|int|string $value;
     });
-    $expectedValue = is_numeric($value) ? $value + 0 : $value;
     expect($model)
         ->toBeObject()
-        ->toHaveProperty('value', $expectedValue)
+        ->toHaveProperty('value', $value)
         ->and($model->value)
-        ->toBe($expectedValue);
+        ->toBe($value);
 })
     ->with([1, -10, 10e10, 1.1, '100', '10.28', '-98e2', 'hello world'])
     ->group('validator', 'union');
@@ -71,11 +70,10 @@ test('Union with float/int/string/array', function ($value) {
     {
         public float|int|string|array $value;
     });
-    $expectedValue = is_numeric($value) ? $value + 0 : $value;
     expect($model)
         ->toBeObject()
-        ->toHaveProperty('value', $expectedValue)
-        ->and($model->value)->toBe($expectedValue);
+        ->toHaveProperty('value', $value)
+        ->and($model->value)->toBe($value);
 })
     ->with([1, -10, 10e10, 1.1, '100', '10.28', '-98e2', 'hello world', [['hello world', 123]]])
     ->group('validator', 'union');
@@ -86,20 +84,19 @@ test('Union with float/int/string/object', function ($value) {
     {
         public float|int|string|object $value;
     });
-    $expectedValue = is_numeric($value) ? $value + 0 : $value;
     expect($model)
         ->toBeObject()
         ->toHaveProperty('value');
-    if (is_array($expectedValue)) {
+    if (is_array($value)) {
         expect($model->value)
             ->toBeObject()
-            ->toMatchArray($expectedValue);
+            ->toMatchArray($value);
 
         return;
     }
     expect($model)
-        ->toHaveProperty('value', $expectedValue)
-        ->and($model->value)->toBe($expectedValue);
+        ->toHaveProperty('value', $value)
+        ->and($model->value)->toBe($value);
 })
     ->with([1, -10, 10e10, 1.1, '100', '10.28', '-98e2', 'hello world', [['name' => 'hello world', 'num' => 123]]])
     ->group('validator', 'union');

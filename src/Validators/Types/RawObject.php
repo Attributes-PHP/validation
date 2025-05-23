@@ -25,6 +25,8 @@ class RawObject implements BaseType
      */
     public function validate(Property $property, Context $context): void
     {
-        v::anyOf(v::objectType(), v::arrayVal())->assert($property->getValue());
+        $value = $property->getValue();
+        v::anyOf(v::objectType(), v::arrayVal())->assert($value);
+        $property->setValue((object) $value);
     }
 }

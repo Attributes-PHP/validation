@@ -31,16 +31,27 @@ class RawEnum implements BaseType
     public function validate(Property $property, Context $context): void
     {
         $typeHint = $context->getLocal('property.typeHint');
+        $value = $property->getValue();
+        if ($value instanceof $typeHint) {
+            return;
+        }
+
         $reflectionEnum = new ReflectionEnum($typeHint);
         $validOptions = [];
+        $backingType = $reflectionEnum->getBackingType();
         foreach ($typeHint::cases() as $case) {
-            $validOptions[] = $reflectionEnum->getBackingType() ? $case->value : $case->name;
+            $validOptions[] = $backingType ? $case->value : $case->name;
         }
 
         $isStrict = $context->getGlobal('option.strict');
+        $isIntEnum = $backingType && $backingType->getName() == 'int';
         // Int enum's do fail equals validation with some invalid data e.g. ['this is an array of strings']
-        $isStrict = $reflectionEnum->getBackingType() && $reflectionEnum->getBackingType()->getName() == 'int' ? true : $isStrict;
+        $isStrict = $isIntEnum ? true : $isStrict;
 
-        v::anyOf(v::instance($typeHint), v::in($validOptions, compareIdentical: $isStrict))->assert($property->getValue());
+        v::contains($validOptions, identical: $isStrict)->assert($value);
+
+        $value = $isIntEnum ? (int) $value : (string) $value;
+        $value = $backingType ? $typeHint::from($value) : $reflectionEnum->getCase($value)->getValue();
+        $property->setValue($value);
     }
 }
