@@ -27,7 +27,7 @@ final class RawFloat implements BaseType
      */
     public function validate(Property $property, Context $context): void
     {
-        if ($context->getGlobal('option.strict')) {
+        if ($context->get('option.strict')) {
             v::floatType()->finite()->assert($property->getValue());
 
             return;

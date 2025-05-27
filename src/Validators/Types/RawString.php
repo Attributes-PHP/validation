@@ -27,7 +27,7 @@ final class RawString implements BaseType
      */
     public function validate(Property $property, Context $context): void
     {
-        if ($context->getGlobal('option.strict')) {
+        if ($context->get('option.strict')) {
             v::stringType()->assert($property->getValue());
 
             return;

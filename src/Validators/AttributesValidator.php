@@ -11,6 +11,7 @@ use Attributes\Validation\Property;
 use ReflectionClass;
 use ReflectionException;
 use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
+use Respect\Validation\Rules as Rules;
 use Respect\Validation\Validatable;
 
 class AttributesValidator implements PropertyValidator
@@ -31,14 +32,15 @@ class AttributesValidator implements PropertyValidator
             return;
         }
 
-        $errorInfo = $context->getGlobal(ErrorInfo::class);
+        $errorInfo = $context->get(ErrorInfo::class);
         foreach ($allAttributes as $attribute) {
-            if (! is_subclass_of($attribute->getName(), Validatable::class)) {
+            $className = $attribute->getName();
+            if (! is_subclass_of($className, Validatable::class) || $className == Rules\DateTime::class) {
                 continue;
             }
 
             // This should be changed in the future with $attribute->newInstance once each rule is marked with #[Attribute]
-            $reflectionClass = new ReflectionClass($attribute->getName());
+            $reflectionClass = new ReflectionClass($className);
             $rule = $reflectionClass->newInstanceArgs($attribute->getArguments());
             try {
                 $rule->assert($property->getValue());

@@ -61,7 +61,7 @@ class TypeHintValidator implements PropertyValidator
             return;
         }
 
-        $context->setLocal(self::class, $this, override: true);
+        $context->set(self::class, $this, override: true);
         $propertyType = $reflectionProperty->getType();
         if ($propertyType instanceof ReflectionNamedType) {
             $this->validateByType($propertyType, $property, $context);
@@ -118,8 +118,8 @@ class TypeHintValidator implements PropertyValidator
     private function validateByType(ReflectionNamedType|ReflectionType $type, Property $property, Context $context): void
     {
         $typeHintValidator = $this->getTypeValidator($type);
-        $context->setLocal(ReflectionNamedType::class, $type, override: true);
-        $context->setLocal('property.typeHint', $type->getName(), override: true);
+        $context->set(ReflectionNamedType::class, $type, override: true);
+        $context->set('property.typeHint', $type->getName(), override: true);
         $typeHintValidator->validate($property, $context);
     }
 

@@ -34,14 +34,14 @@ final class RawNull implements BaseType
             return;
         }
 
-        if (! $context->getGlobal('option.strict') && ! v::notOptional()->validate($value)) {
+        if (! $context->get('option.strict') && ! v::notOptional()->validate($value)) {
             $property->setValue(null);
 
             return;
         }
 
-        $reflectionNamedType = $context->getLocal(ReflectionNamedType::class);
-        $typeHintValidator = $context->getLocal(TypeHintValidator::class);
+        $reflectionNamedType = $context->get(ReflectionNamedType::class);
+        $typeHintValidator = $context->get(TypeHintValidator::class);
         $validator = $typeHintValidator->getTypeValidator($reflectionNamedType, ignoreNull: true);
         $validator->validate($property, $context);
     }

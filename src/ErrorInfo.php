@@ -62,7 +62,7 @@ class ErrorInfo
      */
     public function addError(Exception|string $error): void
     {
-        $propertyPath = $this->context->getOptionalGlobal('propertyPath', []);
+        $propertyPath = $this->context->getOptional('propertyPath', []);
         $errors = &$this->errors;
         foreach ($propertyPath as $property) {
             if (! isset($errors[$property])) {
@@ -73,7 +73,7 @@ class ErrorInfo
         }
         $errors[] = $this->rawExceptions || is_string($error) ? $error : $error->getMessage();
 
-        if ($this->context->getGlobal('option.stopFirstError')) {
+        if ($this->context->get('option.stopFirstError')) {
             if (! is_string($error)) {
                 throw new ValidationException('Invalid data', $this, previous: $error);
             }

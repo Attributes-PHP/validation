@@ -27,7 +27,7 @@ final class StrictType implements BaseType
      */
     public function validate(Property $property, Context $context): void
     {
-        $propertyTypeHint = $context->getLocal('property.typeHint');
+        $propertyTypeHint = $context->get('property.typeHint');
         v::instance($propertyTypeHint)->assert($property->getValue());
     }
 }
