@@ -27,12 +27,12 @@ class Validator implements Validatable
     public function __construct(?PropertyValidator $validator = null, bool $stopFirstError = false, bool $strict = false, ?Context $context = null)
     {
         $this->context = $context ?? new Context;
-        $this->context->setGlobal('option.stopFirstError', $stopFirstError);
-        $this->context->setGlobal('option.strict', $strict);
-        $this->validator = $this->context->getOptionalGlobal(PropertyValidator::class, $validator) ?? $this->getDefaultPropertyValidator();
-        $this->context->setGlobal(PropertyValidator::class, $this->validator);
+        $this->context->set('option.stopFirstError', $stopFirstError);
+        $this->context->set('option.strict', $strict);
+        $this->validator = $this->context->getOptional(PropertyValidator::class, $validator) ?? $this->getDefaultPropertyValidator();
+        $this->context->set(PropertyValidator::class, $this->validator);
 
-        $factory = $this->context->getOptionalGlobal(Factory::class, new Factory);
+        $factory = $this->context->getOptional(Factory::class, new Factory);
         Factory::setDefaultInstance(
             $factory
                 ->withRuleNamespace('Attributes\\Validation\\RulesExtractors\\Rules')
@@ -53,8 +53,8 @@ class Validator implements Validatable
      */
     public function validate(array $data, string|object $model): object
     {
-        $currentLevel = $this->context->getOptionalGlobal('internal.recursionLevel', 0);
-        $maxRecursionLevel = $this->context->getOptionalGlobal('internal.maxRecursionLevel', 30);
+        $currentLevel = $this->context->getOptional('internal.recursionLevel', 0);
+        $maxRecursionLevel = $this->context->getOptional('internal.maxRecursionLevel', 30);
         if ($maxRecursionLevel > 0 && $currentLevel > $maxRecursionLevel) {
             throw new ValidationException("Maximum recursion level reached. Current max recursion level is {$maxRecursionLevel}");
         }
@@ -66,7 +66,7 @@ class Validator implements Validatable
         $validModel = is_string($model) ? new $model : $model;
         $reflectionClass = new ReflectionClass($validModel);
         $errorInfo = new ErrorInfo($this->context);
-        $this->context->setGlobal(ErrorInfo::class, $errorInfo);
+        $this->context->set(ErrorInfo::class, $errorInfo);
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $propertyName = $reflectionProperty->getName();
 
@@ -80,7 +80,7 @@ class Validator implements Validatable
 
             $propertyValue = $data[$propertyName];
             $property = new Property($reflectionProperty, $propertyValue, $validModel::class);
-            $this->context->setGlobal(Property::class, $property, override: true);
+            $this->context->set(Property::class, $property, override: true);
 
             try {
                 $this->validator->validate($property, $this->context);

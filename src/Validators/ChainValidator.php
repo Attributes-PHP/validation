@@ -23,7 +23,7 @@ class ChainValidator implements PropertyValidator
      */
     public function validate(Property $property, Context $context): void
     {
-        $errorInfo = $context->getGlobal(ErrorInfo::class);
+        $errorInfo = $context->get(ErrorInfo::class);
         foreach ($this->allValidators as $validator) {
             try {
                 $validator->validate($property, $context);

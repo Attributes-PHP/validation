@@ -13,6 +13,9 @@ use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Property;
 use DateTime as BaseDateTime;
 use DateTimeInterface;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionProperty;
 use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
 use Respect\Validation\Rules as Rules;
 use Respect\Validation\Validator as v;
@@ -27,6 +30,7 @@ final class DateTime implements BaseType
      *
      * @throws RespectValidationException - If not valid
      * @throws ContextPropertyException
+     * @throws ReflectionException
      */
     public function validate(Property $property, Context $context): void
     {
@@ -42,16 +46,22 @@ final class DateTime implements BaseType
             return;
         }
 
+        $format = $context->getOptional('datetime.format', DateTimeInterface::ATOM);
         $reflection = $property->getReflection();
         $datetimeAttributes = $reflection->getAttributes(Rules\DateTime::class);
-        if (count($datetimeAttributes) > 0) {
-            return;
+        if (count($datetimeAttributes) == 0) {
+            v::dateTime($format)->assert($value);
+        } else {
+            $reflectionClass = new ReflectionClass(Rules\DateTime::class);
+            $reflectionProperty = new ReflectionProperty(Rules\DateTime::class, 'format');
+            foreach ($datetimeAttributes as $attribute) {
+                $rule = $reflectionClass->newInstanceArgs($attribute->getArguments());
+                $rule->assert($value);
+                $format = $reflectionProperty->getValue($rule);
+            }
         }
 
-        $format = $context->getOptionalGlobal('datetime.format', DateTimeInterface::ATOM);
-        v::dateTime($format)->assert($property->getValue());
-
-        $timezone = $context->getOptionalGlobal('datetime.timezone');
+        $timezone = $context->getOptional('datetime.timezone');
         $value = BaseDateTime::createFromFormat($format, (string) $value, $timezone);
         $property->setValue($value);
     }

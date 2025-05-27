@@ -27,7 +27,7 @@ final class RawBool implements BaseType
      */
     public function validate(Property $property, Context $context): void
     {
-        if ($context->getGlobal('option.strict')) {
+        if ($context->get('option.strict')) {
             v::boolType()->assert($property->getValue());
 
             return;

@@ -16,6 +16,7 @@ use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Tests\Models\Basic as Models;
 use Attributes\Validation\Validator;
 use DateTime;
+use Respect\Validation\Rules as Rules;
 
 // Common
 
@@ -349,6 +350,20 @@ test('Datetime type', function (int|float|string|DateTime $value) {
     ->with('datetime')
     ->group('validator', 'basic', 'datetime');
 
+test('Datetime type with different format', function (string|DateTime $value) {
+    $validator = new Validator;
+    $model = $validator->validate(['value' => $value], new class
+    {
+        #[Rules\DateTime('d/m/Y H:i:s')]
+        public DateTime $value;
+    });
+    $expectedValue = is_string($value) ? DateTime::createFromFormat('d/m/Y H:i:s', $value) : $value;
+    expect($model)
+        ->toHaveProperty('value', $expectedValue);
+})
+    ->with(['30/05/2025 09:00:00', new DateTime])
+    ->group('validator', 'basic', 'datetime');
+
 test('Optional datetime type', function (null|string|DateTime $value) {
     $validator = new Validator;
     $model = $validator->validate(['value' => $value], new Models\OptionalDateTime);
@@ -383,6 +398,18 @@ test('Invalid datetime', function ($value) {
     $validator->validate(['value' => $value], new Models\DateTime);
 })
     ->with('invalid datetime')
+    ->throws(ValidationException::class, 'Invalid data')
+    ->group('validator', 'basic', 'datetime');
+
+test('Invalid datetime type with different format', function (string $value) {
+    $validator = new Validator;
+    $validator->validate(['value' => $value], new class
+    {
+        #[Rules\DateTime('d/m/Y H:i:s')]
+        public DateTime $value;
+    });
+})
+    ->with(['2025-03-06T08:57:06+00:00', '12-12-2024 09:00:00'])
     ->throws(ValidationException::class, 'Invalid data')
     ->group('validator', 'basic', 'datetime');
 

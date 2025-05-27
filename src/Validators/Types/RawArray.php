@@ -25,7 +25,7 @@ final class RawArray implements BaseType
      */
     public function validate(Property $property, Context $context): void
     {
-        if ($context->getGlobal('option.strict')) {
+        if ($context->get('option.strict')) {
             v::arrayType()->assert($property->getValue());
 
             return;

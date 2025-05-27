@@ -30,7 +30,7 @@ final class RawEnum implements BaseType
      */
     public function validate(Property $property, Context $context): void
     {
-        $typeHint = $context->getLocal('property.typeHint');
+        $typeHint = $context->get('property.typeHint');
         $value = $property->getValue();
         if ($value instanceof $typeHint) {
             return;
@@ -43,7 +43,7 @@ final class RawEnum implements BaseType
             $validOptions[] = $backingType ? $case->value : $case->name;
         }
 
-        $isStrict = $context->getGlobal('option.strict');
+        $isStrict = $context->get('option.strict');
         $isIntEnum = $backingType && $backingType->getName() == 'int';
         // Int enum's do fail equals validation with some invalid data e.g. ['this is an array of strings']
         $isStrict = $isIntEnum || is_bool($value) ? true : $isStrict;
