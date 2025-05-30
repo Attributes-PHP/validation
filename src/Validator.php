@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Attributes\Validation;
 
 use Attributes\Validation\Exceptions\ContextPropertyException;
+use Attributes\Validation\Exceptions\ContinueValidationException;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Validators\AttributesValidator;
 use Attributes\Validation\Validators\ChainValidator;
@@ -32,7 +33,7 @@ class Validator implements Validatable
         $this->validator = $this->context->getOptional(PropertyValidator::class, $validator) ?? $this->getDefaultPropertyValidator();
         $this->context->set(PropertyValidator::class, $this->validator);
 
-        $factory = $this->context->getOptional(Factory::class, new Factory);
+        $factory = $this->context->getOptional(Factory::class) ?: new Factory;
         Factory::setDefaultInstance(
             $factory
                 ->withRuleNamespace('Attributes\\Validation\\RulesExtractors\\Rules')
@@ -65,10 +66,11 @@ class Validator implements Validatable
 
         $validModel = is_string($model) ? new $model : $model;
         $reflectionClass = new ReflectionClass($validModel);
-        $errorInfo = new ErrorInfo($this->context);
-        $this->context->set(ErrorInfo::class, $errorInfo);
+        $errorInfo = $this->context->getOptional(ErrorInfo::class) ?: new ErrorInfo($this->context);
+        $this->context->set(ErrorInfo::class, $errorInfo, override: true);
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $propertyName = $reflectionProperty->getName();
+            $this->context->push('internal.currentProperty', $propertyName);
 
             if (! array_key_exists($propertyName, $data)) {
                 if (! $reflectionProperty->isInitialized($validModel)) {
@@ -86,8 +88,14 @@ class Validator implements Validatable
                 $this->validator->validate($property, $this->context);
                 $reflectionProperty->setValue($validModel, $property->getValue());
             } catch (ValidationException|RespectValidationException $error) {
+                if ($error->getMessage() == 'Invalid data' && $this->context->get('option.stopFirstError')) {
+                    break;
+                }
+
                 $errorInfo->addError($error);
+            } catch (ContinueValidationException $error) {
             }
+            $this->context->pop('internal.currentProperty');
         }
 
         if ($errorInfo->hasErrors()) {

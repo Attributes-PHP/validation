@@ -62,7 +62,7 @@ class ErrorInfo
      */
     public function addError(Exception|string $error): void
     {
-        $propertyPath = $this->context->getOptional('propertyPath', []);
+        $propertyPath = $this->context->getOptional('internal.currentProperty', []);
         $errors = &$this->errors;
         foreach ($propertyPath as $property) {
             if (! isset($errors[$property])) {

@@ -53,6 +53,24 @@ class Context
         return array_key_exists($propertyName, $this->global);
     }
 
+    public function push(string $propertyName, mixed $value): void
+    {
+        if (! $this->has($propertyName)) {
+            $this->global[$propertyName] = [];
+        }
+
+        $this->global[$propertyName][] = $value;
+    }
+
+    public function pop(string $propertyName): mixed
+    {
+        if (! $this->has($propertyName)) {
+            return null;
+        }
+
+        return array_pop($this->global[$propertyName]);
+    }
+
     public function getAll(): array
     {
         return $this->global;
