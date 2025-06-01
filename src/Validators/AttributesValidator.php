@@ -8,6 +8,7 @@ use Attributes\Validation\Context;
 use Attributes\Validation\ErrorInfo;
 use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Property;
+use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
 use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
@@ -27,7 +28,7 @@ class AttributesValidator implements PropertyValidator
      */
     public function validate(Property $property, Context $context): void
     {
-        $allAttributes = $property->getReflection()->getAttributes();
+        $allAttributes = $property->getReflection()->getAttributes(Validatable::class, ReflectionAttribute::IS_INSTANCEOF);
         if (! $allAttributes) {
             return;
         }
@@ -35,7 +36,7 @@ class AttributesValidator implements PropertyValidator
         $errorInfo = $context->get(ErrorInfo::class);
         foreach ($allAttributes as $attribute) {
             $className = $attribute->getName();
-            if (! is_subclass_of($className, Validatable::class) || $className == Rules\DateTime::class) {
+            if ($className == Rules\DateTime::class) {
                 continue;
             }
 

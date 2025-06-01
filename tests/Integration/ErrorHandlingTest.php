@@ -241,4 +241,4 @@ test('Error handling - stop first error nested', function (bool $isStrict) {
     }
 })
     ->with([true, false])
-    ->group('validator', 'error-handling', 'nested', 'strict');
+    ->group('validator', 'error-handling', 'nested');
