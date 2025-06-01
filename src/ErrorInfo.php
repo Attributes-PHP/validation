@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace Attributes\Validation;
 
+use Attributes\Validation\Exceptions\StopValidationException;
 use Attributes\Validation\Exceptions\ValidationException;
 use Exception;
 use Respect\Validation\Exceptions\NestedValidationException as RespectNestedValidationException;
@@ -77,9 +78,9 @@ class ErrorInfo
 
         if ($this->context->get('option.stopFirstError')) {
             if (! is_string($error)) {
-                throw new ValidationException('Invalid data', $this, previous: $error);
+                throw new StopValidationException('Invalid data', $this, previous: $error);
             }
-            throw new ValidationException('Invalid data', $this);
+            throw new StopValidationException('Invalid data', $this);
         }
     }
 }

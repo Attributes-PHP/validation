@@ -8,12 +8,14 @@ use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\ContinueValidationException;
 use Attributes\Validation\Exceptions\StopValidationException;
 use Attributes\Validation\Exceptions\ValidationException;
+use Attributes\Validation\Options as Options;
 use Attributes\Validation\Validators\AttributesValidator;
 use Attributes\Validation\Validators\ChainValidator;
 use Attributes\Validation\Validators\PropertyValidator;
 use Attributes\Validation\Validators\TypeHintValidator;
 use ReflectionClass;
 use ReflectionException;
+use ReflectionProperty;
 use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
 use Respect\Validation\Factory;
 
@@ -31,6 +33,7 @@ class Validator implements Validatable
         $this->context = $context ?? new Context;
         $this->context->set('option.stopFirstError', $stopFirstError);
         $this->context->set('option.strict', $strict);
+        $this->context->set('option.alias.generator', fn (string $name) => $name);
         $this->validator = $this->context->getOptional(PropertyValidator::class, $validator) ?? $this->getDefaultPropertyValidator();
         $this->context->set(PropertyValidator::class, $this->validator);
 
@@ -69,13 +72,15 @@ class Validator implements Validatable
         $reflectionClass = new ReflectionClass($validModel);
         $errorInfo = $this->context->getOptional(ErrorInfo::class) ?: new ErrorInfo($this->context);
         $this->context->set(ErrorInfo::class, $errorInfo, override: true);
+        $defaultAliasGenerator = $this->getDefaultAliasGenerator($reflectionClass);
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $propertyName = $reflectionProperty->getName();
+            $aliasName = $this->getAliasName($reflectionProperty, $defaultAliasGenerator);
             $this->context->push('internal.currentProperty', $propertyName);
 
-            if (! array_key_exists($propertyName, $data)) {
+            if (! array_key_exists($aliasName, $data)) {
                 if (! $reflectionProperty->isInitialized($validModel)) {
-                    $errorInfo->addError("Missing required property '$propertyName'");
+                    $errorInfo->addError("Missing required property '$aliasName'");
                 }
 
                 $this->context->pop('internal.currentProperty');
@@ -83,7 +88,7 @@ class Validator implements Validatable
                 continue;
             }
 
-            $propertyValue = $data[$propertyName];
+            $propertyValue = $data[$aliasName];
             $property = new Property($reflectionProperty, $propertyValue, $validModel::class);
             $this->context->set(Property::class, $property, override: true);
 
@@ -91,10 +96,6 @@ class Validator implements Validatable
                 $this->validator->validate($property, $this->context);
                 $reflectionProperty->setValue($validModel, $property->getValue());
             } catch (ValidationException|RespectValidationException $error) {
-                if ($error->getMessage() == 'Invalid data' && $this->context->get('option.stopFirstError')) {
-                    break;
-                }
-
                 $errorInfo->addError($error);
             } catch (ContinueValidationException $error) {
             } catch (StopValidationException $error) {
@@ -118,5 +119,45 @@ class Validator implements Validatable
         $chainRulesExtractor->add(new AttributesValidator);
 
         return $chainRulesExtractor;
+    }
+
+    /**
+     * Retrieves the default alias generator for a given class
+     *
+     * @throws ContextPropertyException
+     */
+    private function getDefaultAliasGenerator(ReflectionClass $reflectionClass): callable
+    {
+        $allAttributes = $reflectionClass->getAttributes(Options\AliasGenerator::class);
+        foreach ($allAttributes as $attribute) {
+            $instance = $attribute->newInstance();
+
+            return $instance->getAliasGenerator();
+        }
+
+        $aliasGenerator = $this->context->get('option.alias.generator');
+        if (is_callable($aliasGenerator)) {
+            return $aliasGenerator;
+        }
+
+        $aliasGenerator = new Options\AliasGenerator($aliasGenerator);
+
+        return $aliasGenerator->getAliasGenerator();
+    }
+
+    /**
+     * Retrieves the alias for a given property
+     */
+    private function getAliasName(ReflectionProperty $reflectionProperty, callable $defaultAliasGenerator): string
+    {
+        $propertyName = $reflectionProperty->getName();
+        $allAttributes = $reflectionProperty->getAttributes(Options\Alias::class);
+        foreach ($allAttributes as $attribute) {
+            $instance = $attribute->newInstance();
+
+            return $instance->getAlias($propertyName);
+        }
+
+        return $defaultAliasGenerator($propertyName);
     }
 }
