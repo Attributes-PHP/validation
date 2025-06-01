@@ -44,7 +44,7 @@ $rawData = [
 $validator = new Validator();
 $person = $validator->validate($rawData, new Person);
 
-var_dump($person->age);      // int(100)
+var_dump($person->age);      // int(30)
 var_dump($person->birthday); // object(DateTime) { ["date"] => string(26) "1994-01-01 09:00:00.000000", (...) }
 ```
 
