@@ -44,15 +44,17 @@ test('Error handling - basic', function () {
     } catch (ValidationException $e) {
         expect($e->getMessage())
             ->toBe('Invalid data')
-            ->and($e->getInfo()->getErrors())
+            ->and($e->getErrors())
             ->toBeArray()
             ->toBe([
-                'bool' => ['"invalid" must be a boolean value'],
-                'int' => ['"invalid" must be a finite number', '"invalid" must be numeric'],
-                'float' => ['"invalid" must be a finite number', '"invalid" must be a float number'],
-                'string' => ['`{ "invalid" }` must be a string'],
-                'array' => ['"invalid" must be an array value'],
-                'object' => ['"invalid" must be an array value'],
+                ['field' => 'bool', 'reason' => '"invalid" must be a boolean value'],
+                ['field' => 'int', 'reason' => '"invalid" must be a finite number'],
+                ['field' => 'int', 'reason' => '"invalid" must be numeric'],
+                ['field' => 'float', 'reason' => '"invalid" must be a finite number'],
+                ['field' => 'float', 'reason' => '"invalid" must be a float number'],
+                ['field' => 'string', 'reason' => '`{ "invalid" }` must be a string'],
+                ['field' => 'array', 'reason' => '"invalid" must be an array value'],
+                ['field' => 'object', 'reason' => '"invalid" must be an array value'],
             ]);
     }
 })
@@ -77,17 +79,13 @@ test('Error handling - nested', function () {
     } catch (ValidationException $e) {
         expect($e->getMessage())
             ->toBe('Invalid data')
-            ->and($e->getInfo()->getErrors())
+            ->and($e->getErrors())
             ->toBeArray()
             ->toBe([
-                'profile' => [
-                    'lastName' => ['`{ "profile.lastName" }` must be a string'],
-                    'post' => [
-                        'title' => ['`{ "profile.post.title" }` must be a string'],
-                    ],
-                ],
-                'userType' => ['"userType" must be in `{ "admin", "moderator", "guest" }`'],
-                'createdAt' => ['"createdAt" must be a valid date/time in the format "2005-12-30T01:02:03+00:00"'],
+                ['field' => 'profile.lastName', 'reason' => '`{ "profile.lastName" }` must be a string'],
+                ['field' => 'profile.post.title', 'reason' => '`{ "profile.post.title" }` must be a string'],
+                ['field' => 'userType', 'reason' => '"userType" must be in `{ "admin", "moderator", "guest" }`'],
+                ['field' => 'createdAt', 'reason' => '"createdAt" must be a valid date/time in the format "2005-12-30T01:02:03+00:00"'],
             ]);
     }
 })
@@ -123,15 +121,17 @@ test('Error handling - strict basic', function () {
     } catch (ValidationException $e) {
         expect($e->getMessage())
             ->toBe('Invalid data')
-            ->and($e->getInfo()->getErrors())
+            ->and($e->getErrors())
             ->toBeArray()
             ->toBe([
-                'bool' => ['"invalid" must be of type boolean'],
-                'int' => ['"invalid" must be of type integer', '"invalid" must be a finite number'],
-                'float' => ['"invalid" must be of type float', '"invalid" must be a finite number'],
-                'string' => ['`{ "invalid" }` must be of type string'],
-                'array' => ['"invalid" must be of type array'],
-                'object' => ['"invalid" must be an array value'],
+                ['field' => 'bool', 'reason' => '"invalid" must be of type boolean'],
+                ['field' => 'int', 'reason' => '"invalid" must be of type integer'],
+                ['field' => 'int', 'reason' => '"invalid" must be a finite number'],
+                ['field' => 'float', 'reason' => '"invalid" must be of type float'],
+                ['field' => 'float', 'reason' => '"invalid" must be a finite number'],
+                ['field' => 'string', 'reason' => '`{ "invalid" }` must be of type string'],
+                ['field' => 'array', 'reason' => '"invalid" must be of type array'],
+                ['field' => 'object', 'reason' => '"invalid" must be an array value'],
             ]);
     }
 })
@@ -156,17 +156,13 @@ test('Error handling - strict nested', function () {
     } catch (ValidationException $e) {
         expect($e->getMessage())
             ->toBe('Invalid data')
-            ->and($e->getInfo()->getErrors())
+            ->and($e->getErrors())
             ->toBeArray()
             ->toBe([
-                'profile' => [
-                    'lastName' => ['`{ "profile.lastName" }` must be of type string'],
-                    'post' => [
-                        'title' => ['`{ "profile.post.title" }` must be of type string'],
-                    ],
-                ],
-                'userType' => ['"userType" must be in `{ "admin", "moderator", "guest" }`'],
-                'createdAt' => ['"createdAt" must be a valid date/time in the format "2005-12-30T01:02:03+00:00"'],
+                ['field' => 'profile.lastName', 'reason' => '`{ "profile.lastName" }` must be of type string'],
+                ['field' => 'profile.post.title', 'reason' => '`{ "profile.post.title" }` must be of type string'],
+                ['field' => 'userType', 'reason' => '"userType" must be in `{ "admin", "moderator", "guest" }`'],
+                ['field' => 'createdAt', 'reason' => '"createdAt" must be a valid date/time in the format "2005-12-30T01:02:03+00:00"'],
             ]);
     }
 })
@@ -200,12 +196,12 @@ test('Error handling - stop first error basic', function (bool $isStrict) {
             public object $object;
         });
     } catch (ValidationException $e) {
-        $expectedErrors = $isStrict ? ['"invalid" must be of type boolean'] : ['"invalid" must be a boolean value'];
+        $expectedError = $isStrict ? '"invalid" must be of type boolean' : '"invalid" must be a boolean value';
         expect($e->getMessage())
             ->toBe('Invalid data')
-            ->and($e->getInfo()->getErrors())
+            ->and($e->getErrors())
             ->toBeArray()
-            ->toBe(['bool' => $expectedErrors]);
+            ->toBe([['field' => 'bool', 'reason' => $expectedError]]);
     }
 })
     ->with([true, false])
@@ -228,16 +224,15 @@ test('Error handling - stop first error nested', function (bool $isStrict) {
     try {
         $validator->validate($rawData, new Models\User);
     } catch (ValidationException $e) {
-        $expectedErrors = $isStrict ? ['`{ "profile.lastName" }` must be of type string'] : ['`{ "profile.lastName" }` must be a string'];
+        $expectedError = $isStrict ? '`{ "profile.lastName" }` must be of type string' : '`{ "profile.lastName" }` must be a string';
         expect($e->getMessage())
             ->toBe('Invalid data')
-            ->and($e->getInfo()->getErrors())
+            ->and($e->getErrors())
             ->toBeArray()
-            ->toBe([
-                'profile' => [
-                    'lastName' => $expectedErrors,
-                ],
-            ]);
+            ->toBe([[
+                'field' => 'profile.lastName',
+                'reason' => $expectedError,
+            ]]);
     }
 })
     ->with([true, false])

@@ -14,6 +14,8 @@ namespace Attributes\Validation\Tests\Integration;
 
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Tests\Models\Complex as Models;
+use Attributes\Validation\Types\IntArr;
+use Attributes\Validation\Types\StrArr;
 use Attributes\Validation\Validator;
 use DateTime;
 use stdClass;
@@ -115,6 +117,43 @@ test('Union with int/DateTime', function ($value) {
 })
     ->with([1, -10, 10e10, 1.1, '100', '10.28', '-98e2', '2050-12-06T00:00:03+00:00', new DateTime])
     ->group('validator', 'union');
+
+test('Union with int/IntArr', function ($value) {
+    $validator = new Validator;
+    $model = $validator->validate(['value' => $value], new class
+    {
+        public int|IntArr $value;
+    });
+    expect($model)
+        ->toBeObject();
+
+    if (is_numeric($value)) {
+        expect($model->value)->toBe((int) $value);
+
+        return;
+    }
+
+    expect($model->value)
+        ->toHaveCount(count($value))
+        ->each
+        ->toBeInt();
+})
+    ->with([1, -10, 10e10, 1.1, '100', '10.28', '-98e2', [[1, 2, 3]], [[0.22, '90', 19]]])
+    ->group('validator', 'union');
+
+test('Union with IntArr/StrArr', function ($value) {
+    $validator = new Validator;
+    $model = $validator->validate(['value' => $value], new class
+    {
+        public IntArr|StrArr $value;
+    });
+    expect($model)
+        ->toBeObject()
+        ->and($model->value)
+        ->toMatchArray($value);
+})
+    ->with([[[1, 2, 3]], [['hello', 'bro', 'another']]])
+    ->group('validator', 'union', 'hey');
 
 /*** Intersection ***/
 

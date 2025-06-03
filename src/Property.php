@@ -12,13 +12,10 @@ class Property
 
     private mixed $value;
 
-    private string $modelClass;
-
-    public function __construct(ReflectionProperty $property, mixed $value, string $modelClass)
+    public function __construct(ReflectionProperty $property, mixed $value)
     {
         $this->property = $property;
         $this->value = $value;
-        $this->modelClass = $modelClass;
     }
 
     public function getName(): string
@@ -39,10 +36,5 @@ class Property
     public function getReflection(): ReflectionProperty
     {
         return $this->property;
-    }
-
-    public function getModelClass(): string
-    {
-        return $this->modelClass;
     }
 }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Attributes\Validation\Validators;
 
 use Attributes\Validation\Context;
-use Attributes\Validation\ErrorInfo;
+use Attributes\Validation\ErrorHolder;
 use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Property;
 use ReflectionAttribute;
@@ -33,7 +33,7 @@ class AttributesValidator implements PropertyValidator
             return;
         }
 
-        $errorInfo = $context->get(ErrorInfo::class);
+        $errorInfo = $context->get(ErrorHolder::class);
         foreach ($allAttributes as $attribute) {
             $className = $attribute->getName();
             if ($className == Rules\DateTime::class) {

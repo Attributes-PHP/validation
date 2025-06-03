@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Attributes\Validation\Validators;
 
+use ArrayObject;
 use Attributes\Validation\Context;
 use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\ValidationException;
@@ -138,8 +139,8 @@ class TypeHintValidator implements PropertyValidator
             'enum' => new TypeValidators\RawEnum,
             'null' => new TypeValidators\RawNull,
             DateTime::class => new TypeValidators\DateTime,
-            DateTimeInterface::class => new TypeValidators\DateTime,
             'interface' => new TypeValidators\StrictType,
+            ArrayObject::class => new TypeValidators\ArrayObject,
             'default' => new TypeValidators\AnyClass,
         ];
     }
@@ -156,6 +157,10 @@ class TypeHintValidator implements PropertyValidator
         $typeHintName = $propertyType->getName();
         $typeName = isset($this->typeHintRules[$typeHintName]) ? $typeHintName : 'default';
         if ($typeName == 'default') {
+            if (is_subclass_of($typeHintName, ArrayObject::class)) {
+                return $this->typeHintRules[ArrayObject::class];
+            }
+
             if (enum_exists($typeHintName)) {
                 return $this->typeHintRules['enum'];
             }
