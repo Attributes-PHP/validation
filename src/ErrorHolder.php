@@ -30,7 +30,7 @@ use Attributes\Validation\Exceptions\ValidationException;
 use Exception;
 use Respect\Validation\Exceptions\NestedValidationException as RespectNestedValidationException;
 
-class ErrorInfo
+class ErrorHolder
 {
     private Context $context;
 
@@ -62,18 +62,19 @@ class ErrorInfo
     public function addError(Exception|string $error): void
     {
         $propertyPath = $this->context->getOptional('internal.currentProperty', []);
-        $errors = &$this->errors;
-        foreach ($propertyPath as $property) {
-            if (! isset($errors[$property])) {
-                $errors[$property] = [];
-            }
-
-            $errors = &$errors[$property];
-        }
+        $fullPropertyPath = implode('.', $propertyPath);
         if ($error instanceof RespectNestedValidationException) {
-            $errors += array_values($error->getMessages());
+            foreach (array_values($error->getMessages()) as $message) {
+                $this->errors[] = [
+                    'field' => $fullPropertyPath,
+                    'reason' => $message,
+                ];
+            }
         } else {
-            $errors[] = is_string($error) ? $error : $error->getMessage();
+            $this->errors[] = [
+                'field' => $fullPropertyPath,
+                'reason' => is_string($error) ? $error : $error->getMessage(),
+            ];
         }
 
         if ($this->context->get('option.stopFirstError')) {

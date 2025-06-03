@@ -3,6 +3,7 @@
 namespace Attributes\Validation\Tests\Benchmark;
 
 use Attributes\Validation\Tests\Models as Models;
+use Attributes\Validation\Types\IntArr;
 use Attributes\Validation\Validator;
 use Generator;
 use PhpBench\Attributes as Bench;
@@ -40,6 +41,17 @@ class BenchValidator
     }
 
     #[Bench\Iterations(100)]
+    #[Bench\ParamProviders(['getSampleArray'])]
+    public function benchArrays(array $params)
+    {
+        $validator = new Validator;
+        $validator->validate(['value' => $params['data']], new class
+        {
+            public IntArr $value;
+        });
+    }
+
+    #[Bench\Iterations(100)]
     public function benchNestedAndAttributes()
     {
         $validator = new Validator;
@@ -63,5 +75,14 @@ class BenchValidator
     {
         yield 'strict' => ['isStrict' => true];
         yield 'loose' => ['isStrict' => false];
+    }
+
+    public function getSampleArray(): Generator
+    {
+        $numbers = [];
+        for ($i = 0; $i < 100; $i++) {
+            $numbers[$i] = $i;
+        }
+        yield 'numbers' => ['data' => $numbers];
     }
 }

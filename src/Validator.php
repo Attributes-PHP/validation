@@ -70,8 +70,8 @@ class Validator implements Validatable
 
         $validModel = is_string($model) ? new $model : $model;
         $reflectionClass = new ReflectionClass($validModel);
-        $errorInfo = $this->context->getOptional(ErrorInfo::class) ?: new ErrorInfo($this->context);
-        $this->context->set(ErrorInfo::class, $errorInfo, override: true);
+        $errorInfo = $this->context->getOptional(ErrorHolder::class) ?: new ErrorHolder($this->context);
+        $this->context->set(ErrorHolder::class, $errorInfo, override: true);
         $defaultAliasGenerator = $this->getDefaultAliasGenerator($reflectionClass);
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
             $propertyName = $reflectionProperty->getName();
@@ -89,7 +89,7 @@ class Validator implements Validatable
             }
 
             $propertyValue = $data[$aliasName];
-            $property = new Property($reflectionProperty, $propertyValue, $validModel::class);
+            $property = new Property($reflectionProperty, $propertyValue);
             $this->context->set(Property::class, $property, override: true);
 
             try {

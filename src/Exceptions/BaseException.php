@@ -4,22 +4,22 @@ declare(strict_types=1);
 
 namespace Attributes\Validation\Exceptions;
 
-use Attributes\Validation\ErrorInfo;
+use Attributes\Validation\ErrorHolder;
 use Exception;
 use Throwable;
 
 abstract class BaseException extends Exception
 {
-    private ?ErrorInfo $result;
+    private ?ErrorHolder $errorHolder;
 
-    public function __construct(string $message, ?ErrorInfo $result = null, ?Throwable $previous = null)
+    public function __construct(string $message, ?ErrorHolder $errorHolder = null, ?Throwable $previous = null)
     {
-        $this->result = $result;
+        $this->errorHolder = $errorHolder;
         parent::__construct($message, 0, $previous);
     }
 
-    public function getInfo(): ?ErrorInfo
+    public function getErrors(): array
     {
-        return $this->result;
+        return $this->errorHolder ? $this->errorHolder->getErrors() : [];
     }
 }

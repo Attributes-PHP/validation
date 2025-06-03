@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Attributes\Validation\Validators;
 
 use Attributes\Validation\Context;
-use Attributes\Validation\ErrorInfo;
+use Attributes\Validation\ErrorHolder;
 use Attributes\Validation\Exceptions\ContinueValidationException;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Property;
@@ -25,7 +25,7 @@ class ChainValidator implements PropertyValidator
      */
     public function validate(Property $property, Context $context): void
     {
-        $errorInfo = $context->get(ErrorInfo::class);
+        $errorInfo = $context->get(ErrorHolder::class);
         foreach ($this->allValidators as $validator) {
             try {
                 $validator->validate($property, $context);
