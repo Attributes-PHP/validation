@@ -6,6 +6,7 @@ namespace Attributes\Validation;
 
 use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\ContinueValidationException;
+use Attributes\Validation\Exceptions\InvalidOptionException;
 use Attributes\Validation\Exceptions\StopValidationException;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Options as Options;
@@ -125,6 +126,7 @@ class Validator implements Validatable
      * Retrieves the default alias generator for a given class
      *
      * @throws ContextPropertyException
+     * @throws InvalidOptionException
      */
     private function getDefaultAliasGenerator(ReflectionClass $reflectionClass): callable
     {

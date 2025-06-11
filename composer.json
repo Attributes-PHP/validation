@@ -26,13 +26,13 @@
         ]
     },
     "require-dev": {
-        "laravel/pint": "*",
+        "laravel/pint": "1.20.0",
         "pestphp/pest": "^2.36",
         "phpbench/phpbench": "^1.4"
     },
     "scripts": {
         "lint": "./vendor/bin/pint --config pint.json",
-        "benchmark": "./vendor/bin/phpbench run tests/Benchmark/Benchmark.php",
+        "benchmark": "./vendor/bin/phpbench run tests/Benchmark/Base.php --tag=base --quiet && ./vendor/bin/phpbench run tests/Benchmark/Benchmark.php --report=aggregate --ref=base",
         "test:lint": "./vendor/bin/pint --test",
         "test:coverage": "./vendor/bin/pest --coverage --parallel",
         "test:unit": "./vendor/bin/pest --colors=always --exclude-group=integration --parallel",
