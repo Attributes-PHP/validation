@@ -1,6 +1,7 @@
 .idea/
 cache/
 *.cache
+.phpbench/
 /tests/coverage
 /coverage.xml
 
