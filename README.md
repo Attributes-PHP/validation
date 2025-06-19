@@ -17,6 +17,7 @@
 ## Requirements
 
 - PHP 8.1+
+- [Attributes-PHP/options](https://github.com/Attributes-PHP/options)
 - [respect/validation](https://github.com/Respect/Validation)
 
 We aim to support versions that haven't reached their end-of-life.
