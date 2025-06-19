@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Attributes\Validation;
 
+use Attributes\Options;
+use Attributes\Options\Exceptions\InvalidOptionException;
 use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\ContinueValidationException;
-use Attributes\Validation\Exceptions\InvalidOptionException;
 use Attributes\Validation\Exceptions\StopValidationException;
 use Attributes\Validation\Exceptions\ValidationException;
-use Attributes\Validation\Options as Options;
 use Attributes\Validation\Validators\AttributesValidator;
 use Attributes\Validation\Validators\ChainValidator;
 use Attributes\Validation\Validators\PropertyValidator;
@@ -56,6 +56,7 @@ class Validator implements Validatable
      * @throws ValidationException - If validation fails
      * @throws ContextPropertyException - If unable to retrieve a given context property
      * @throws ReflectionException
+     * @throws InvalidOptionException
      */
     public function validate(array $data, string|object $model): object
     {
@@ -75,6 +76,10 @@ class Validator implements Validatable
         $this->context->set(ErrorHolder::class, $errorInfo, override: true);
         $defaultAliasGenerator = $this->getDefaultAliasGenerator($reflectionClass);
         foreach ($reflectionClass->getProperties() as $reflectionProperty) {
+            if (! $this->isToValidate($reflectionProperty)) {
+                continue;
+            }
+
             $propertyName = $reflectionProperty->getName();
             $aliasName = $this->getAliasName($reflectionProperty, $defaultAliasGenerator);
             $this->context->push('internal.currentProperty', $propertyName);
@@ -161,5 +166,20 @@ class Validator implements Validatable
         }
 
         return $defaultAliasGenerator($propertyName);
+    }
+
+    /**
+     * Checks if a given property is to be ignored
+     */
+    private function isToValidate(ReflectionProperty $reflectionProperty): bool
+    {
+        $allAttributes = $reflectionProperty->getAttributes(Options\Ignore::class);
+        foreach ($allAttributes as $attribute) {
+            $instance = $attribute->newInstance();
+
+            return ! $instance->ignoreValidation();
+        }
+
+        return true;
     }
 }

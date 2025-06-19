@@ -2,8 +2,9 @@
 
 namespace Attributes\Validation\Tests\Models\Complex;
 
-use Attributes\Validation\Options\Alias;
-use Attributes\Validation\Options\AliasGenerator;
+use Attributes\Options\Alias;
+use Attributes\Options\AliasGenerator;
+use Attributes\Options\Ignore;
 use Respect\Validation\Rules as Rules;
 
 #[AliasGenerator('camel')]
@@ -14,6 +15,9 @@ class Post
 
     #[Rules\NotEmpty]
     public string $my_title;
+
+    #[Ignore]
+    public string $privateData;
 }
 
 class Profile
