@@ -4,8 +4,51 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "23f838d6b8502342d6ecae0f375acee0",
+    "content-hash": "8aa3e63f0d720f394343b9195c3cf112",
     "packages": [
+        {
+            "name": "attributes-php/options",
+            "version": "v0.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Attributes-PHP/options.git",
+                "reference": "0a14db984b0eed6f52b9550849de3f8d4aaa0876"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Attributes-PHP/options/zipball/0a14db984b0eed6f52b9550849de3f8d4aaa0876",
+                "reference": "0a14db984b0eed6f52b9550849de3f8d4aaa0876",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "laravel/pint": "1.20.0",
+                "pestphp/pest": "^2.36"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Attributes\\Options\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Serializes any object into a primitive type",
+            "keywords": [
+                "attributes",
+                "fast",
+                "serialization"
+            ],
+            "support": {
+                "issues": "https://github.com/Attributes-PHP/options/issues",
+                "source": "https://github.com/Attributes-PHP/options/tree/v0.1.1"
+            },
+            "time": "2025-06-19T06:43:46+00:00"
+        },
         {
             "name": "respect/stringifier",
             "version": "0.2.0",
@@ -570,16 +613,16 @@
         },
         {
             "name": "filp/whoops",
-            "version": "2.18.2",
+            "version": "2.18.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filp/whoops.git",
-                "reference": "89dabca1490bc77dbcab41c2b20968c7e44bf7c3"
+                "reference": "59a123a3d459c5a23055802237cb317f609867e5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filp/whoops/zipball/89dabca1490bc77dbcab41c2b20968c7e44bf7c3",
-                "reference": "89dabca1490bc77dbcab41c2b20968c7e44bf7c3",
+                "url": "https://api.github.com/repos/filp/whoops/zipball/59a123a3d459c5a23055802237cb317f609867e5",
+                "reference": "59a123a3d459c5a23055802237cb317f609867e5",
                 "shasum": ""
             },
             "require": {
@@ -629,7 +672,7 @@
             ],
             "support": {
                 "issues": "https://github.com/filp/whoops/issues",
-                "source": "https://github.com/filp/whoops/tree/2.18.2"
+                "source": "https://github.com/filp/whoops/tree/2.18.3"
             },
             "funding": [
                 {
@@ -637,7 +680,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-06-11T20:42:19+00:00"
+            "time": "2025-06-16T00:02:10+00:00"
         },
         {
             "name": "jean85/pretty-package-versions",

@@ -10,7 +10,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.1",
-        "respect/validation": "^2.0"
+        "respect/validation": "^2.0",
+        "attributes-php/options": "^0.1"
     },
     "autoload": {
         "psr-4": {

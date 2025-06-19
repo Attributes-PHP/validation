@@ -153,7 +153,7 @@ test('Union with IntArr/StrArr', function ($value) {
         ->toMatchArray($value);
 })
     ->with([[[1, 2, 3]], [['hello', 'bro', 'another']]])
-    ->group('validator', 'union', 'hey');
+    ->group('validator', 'union');
 
 /*** Intersection ***/
 

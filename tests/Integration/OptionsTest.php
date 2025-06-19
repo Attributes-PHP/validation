@@ -12,10 +12,13 @@ declare(strict_types=1);
 
 namespace Attributes\Validation\Tests\Integration;
 
-use Attributes\Validation\Exceptions\ValidationException;
-use Attributes\Validation\Options as Options;
+use Attributes\Options as Options;
+use Attributes\Options\Exceptions\InvalidOptionException;
+use Attributes\Options\Ignore;
 use Attributes\Validation\Tests\Models as Models;
 use Attributes\Validation\Validator;
+
+// Alias and alias generator
 
 test('Alias/AliasGenerator options', function (bool $isStrict) {
     $validator = new Validator(strict: $isStrict);
@@ -37,7 +40,9 @@ test('Alias/AliasGenerator options', function (bool $isStrict) {
         ->toHaveProperty('my_title', 'My Post Title');
 })
     ->with([true, false])
-    ->group('validator', 'options', 'nested');
+    ->group('validator', 'options', 'alias', 'alias-generator');
+
+// Alias generator
 
 test('AliasGenerator camelCase', function (bool $isStrict) {
     $validator = new Validator(strict: $isStrict);
@@ -60,7 +65,7 @@ test('AliasGenerator camelCase', function (bool $isStrict) {
         ->toHaveProperty('camelCaseName', 'camel');
 })
     ->with([true, false])
-    ->group('validator', 'options', 'basic');
+    ->group('validator', 'options', 'alias-generator');
 
 test('AliasGenerator PascalCase', function (bool $isStrict) {
     $validator = new Validator(strict: $isStrict);
@@ -83,7 +88,7 @@ test('AliasGenerator PascalCase', function (bool $isStrict) {
         ->toHaveProperty('camelCaseName', 'camel');
 })
     ->with([true, false])
-    ->group('validator', 'options', 'basic');
+    ->group('validator', 'options', 'alias-generator');
 
 test('AliasGenerator SnakeCase', function (bool $isStrict) {
     $validator = new Validator(strict: $isStrict);
@@ -106,7 +111,7 @@ test('AliasGenerator SnakeCase', function (bool $isStrict) {
         ->toHaveProperty('camelCaseName', 'camel');
 })
     ->with([true, false])
-    ->group('validator', 'options', 'basic');
+    ->group('validator', 'options', 'alias-generator');
 
 test('Invalid AliasGenerator', function (bool $isStrict) {
     $validator = new Validator(strict: $isStrict);
@@ -116,5 +121,32 @@ test('Invalid AliasGenerator', function (bool $isStrict) {
     });
 })
     ->with([true, false])
-    ->throws(ValidationException::class, 'Invalid alias generator \'invalid\'')
-    ->group('validator', 'options', 'basic');
+    ->throws(InvalidOptionException::class, 'Invalid alias generator \'invalid\'')
+    ->group('validator', 'options', 'alias-generator');
+
+// Ignore
+
+test('Ignore', function (bool $isStrict) {
+    $validator = new Validator(strict: $isStrict);
+    $rawData = [
+        'value' => 'my value',
+        'ignore' => 'ignored',
+        'ignoreValidation' => 'ignored',
+    ];
+    $model = $validator->validate($rawData, new class
+    {
+        public string $value;
+
+        #[Ignore]
+        public string $ignore = 'original';
+
+        #[Ignore(serialization: false)]
+        public string $ignoreValidation = 'original';
+    });
+    expect($model)
+        ->toHaveProperty('value', 'my value')
+        ->toHaveProperty('ignore', 'original')
+        ->toHaveProperty('ignoreValidation', 'original');
+})
+    ->with([true, false])
+    ->group('validator', 'options', 'ignore');
