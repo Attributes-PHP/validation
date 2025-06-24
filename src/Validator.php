@@ -22,9 +22,9 @@ use Respect\Validation\Factory;
 
 class Validator implements Validatable
 {
-    private Context $context;
+    protected Context $context;
 
-    private PropertyValidator $validator;
+    protected PropertyValidator $validator;
 
     /**
      * @throws ContextPropertyException
@@ -118,7 +118,7 @@ class Validator implements Validatable
         return $validModel;
     }
 
-    private function getDefaultPropertyValidator(): PropertyValidator
+    protected function getDefaultPropertyValidator(): PropertyValidator
     {
         $chainRulesExtractor = new ChainValidator;
         $chainRulesExtractor->add(new TypeHintValidator);
@@ -133,7 +133,7 @@ class Validator implements Validatable
      * @throws ContextPropertyException
      * @throws InvalidOptionException
      */
-    private function getDefaultAliasGenerator(ReflectionClass $reflectionClass): callable
+    protected function getDefaultAliasGenerator(ReflectionClass $reflectionClass): callable
     {
         $allAttributes = $reflectionClass->getAttributes(Options\AliasGenerator::class);
         foreach ($allAttributes as $attribute) {
@@ -155,7 +155,7 @@ class Validator implements Validatable
     /**
      * Retrieves the alias for a given property
      */
-    private function getAliasName(ReflectionProperty $reflectionProperty, callable $defaultAliasGenerator): string
+    protected function getAliasName(ReflectionProperty $reflectionProperty, callable $defaultAliasGenerator): string
     {
         $propertyName = $reflectionProperty->getName();
         $allAttributes = $reflectionProperty->getAttributes(Options\Alias::class);
@@ -171,7 +171,7 @@ class Validator implements Validatable
     /**
      * Checks if a given property is to be ignored
      */
-    private function isToValidate(ReflectionProperty $reflectionProperty): bool
+    protected function isToValidate(ReflectionProperty $reflectionProperty): bool
     {
         $allAttributes = $reflectionProperty->getAttributes(Options\Ignore::class);
         foreach ($allAttributes as $attribute) {
