@@ -16,6 +16,8 @@ use Attributes\Validation\Validators\PropertyValidator;
 use Attributes\Validation\Validators\TypeHintValidator;
 use ReflectionClass;
 use ReflectionException;
+use ReflectionFunction;
+use ReflectionParameter;
 use ReflectionProperty;
 use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
 use Respect\Validation\Factory;
@@ -86,7 +88,11 @@ class Validator implements Validatable
 
             if (! array_key_exists($aliasName, $data)) {
                 if (! $reflectionProperty->isInitialized($validModel)) {
-                    $errorInfo->addError("Missing required property '$aliasName'");
+                    try {
+                        $errorInfo->addError("Missing required property '$aliasName'");
+                    } catch (StopValidationException $e) {
+                        break;
+                    }
                 }
 
                 $this->context->pop('internal.currentProperty');
@@ -118,6 +124,72 @@ class Validator implements Validatable
         return $validModel;
     }
 
+    /**
+     * Validates a given data according to a given model
+     *
+     * @param  array  $data  - Data to validate
+     * @param  callable  $call  - Callable to validate data against
+     * @return array - Returns an array with the necessary arguments for the callable
+     *
+     * @throws ValidationException - If validation fails
+     * @throws ContextPropertyException - If unable to retrieve a given context property
+     * @throws ReflectionException
+     * @throws InvalidOptionException
+     */
+    public function validateCallable(array $data, callable $call): array
+    {
+        $arguments = [];
+        $reflectionFunction = new ReflectionFunction($call);
+        $errorInfo = $this->context->getOptional(ErrorHolder::class) ?: new ErrorHolder($this->context);
+        $this->context->set(ErrorHolder::class, $errorInfo, override: true);
+        $defaultAliasGenerator = $this->getDefaultAliasGenerator($reflectionFunction);
+        foreach ($reflectionFunction->getParameters() as $parameter) {
+            if (! $this->isToValidate($parameter)) {
+                continue;
+            }
+
+            $propertyName = $parameter->getName();
+            $aliasName = $this->getAliasName($parameter, $defaultAliasGenerator);
+            $this->context->push('internal.currentProperty', $propertyName);
+
+            if (! array_key_exists($aliasName, $data)) {
+                if (! $parameter->isDefaultValueAvailable()) {
+                    try {
+                        $errorInfo->addError("Missing required argument '$aliasName'");
+                    } catch (StopValidationException $error) {
+                        break;
+                    }
+                }
+
+                $this->context->pop('internal.currentProperty');
+
+                continue;
+            }
+
+            $propertyValue = $data[$aliasName];
+            $property = new Property($parameter, $propertyValue);
+            $this->context->set(Property::class, $property, override: true);
+
+            try {
+                $this->validator->validate($property, $this->context);
+                $arguments[$parameter->getName()] = $property->getValue();
+            } catch (ValidationException|RespectValidationException $error) {
+                $errorInfo->addError($error);
+            } catch (ContinueValidationException $error) {
+            } catch (StopValidationException $error) {
+                break;
+            } finally {
+                $this->context->pop('internal.currentProperty');
+            }
+        }
+
+        if ($errorInfo->hasErrors()) {
+            throw new ValidationException('Invalid data', $errorInfo);
+        }
+
+        return $arguments;
+    }
+
     protected function getDefaultPropertyValidator(): PropertyValidator
     {
         $chainRulesExtractor = new ChainValidator;
@@ -133,9 +205,9 @@ class Validator implements Validatable
      * @throws ContextPropertyException
      * @throws InvalidOptionException
      */
-    protected function getDefaultAliasGenerator(ReflectionClass $reflectionClass): callable
+    protected function getDefaultAliasGenerator(ReflectionClass|ReflectionFunction $reflection): callable
     {
-        $allAttributes = $reflectionClass->getAttributes(Options\AliasGenerator::class);
+        $allAttributes = $reflection->getAttributes(Options\AliasGenerator::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 
@@ -155,10 +227,10 @@ class Validator implements Validatable
     /**
      * Retrieves the alias for a given property
      */
-    protected function getAliasName(ReflectionProperty $reflectionProperty, callable $defaultAliasGenerator): string
+    protected function getAliasName(ReflectionProperty|ReflectionParameter $reflection, callable $defaultAliasGenerator): string
     {
-        $propertyName = $reflectionProperty->getName();
-        $allAttributes = $reflectionProperty->getAttributes(Options\Alias::class);
+        $propertyName = $reflection->getName();
+        $allAttributes = $reflection->getAttributes(Options\Alias::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 
@@ -171,9 +243,9 @@ class Validator implements Validatable
     /**
      * Checks if a given property is to be ignored
      */
-    protected function isToValidate(ReflectionProperty $reflectionProperty): bool
+    protected function isToValidate(ReflectionProperty|ReflectionParameter $reflection): bool
     {
-        $allAttributes = $reflectionProperty->getAttributes(Options\Ignore::class);
+        $allAttributes = $reflection->getAttributes(Options\Ignore::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 

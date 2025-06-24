@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "attributes-php/options",
-            "version": "v0.1.1",
+            "version": "v0.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Attributes-PHP/options.git",
-                "reference": "0a14db984b0eed6f52b9550849de3f8d4aaa0876"
+                "reference": "cc3457235124e3795fc88988c35851b35429f138"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Attributes-PHP/options/zipball/0a14db984b0eed6f52b9550849de3f8d4aaa0876",
-                "reference": "0a14db984b0eed6f52b9550849de3f8d4aaa0876",
+                "url": "https://api.github.com/repos/Attributes-PHP/options/zipball/cc3457235124e3795fc88988c35851b35429f138",
+                "reference": "cc3457235124e3795fc88988c35851b35429f138",
                 "shasum": ""
             },
             "require": {
@@ -45,9 +45,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Attributes-PHP/options/issues",
-                "source": "https://github.com/Attributes-PHP/options/tree/v0.1.1"
+                "source": "https://github.com/Attributes-PHP/options/tree/v0.1.2"
             },
-            "time": "2025-06-19T06:43:46+00:00"
+            "time": "2025-06-24T07:45:08+00:00"
         },
         {
             "name": "respect/stringifier",
