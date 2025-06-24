@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace Attributes\Validation;
 
+use ReflectionParameter;
 use ReflectionProperty;
 
 class Property
 {
-    private ReflectionProperty $property;
+    private ReflectionProperty|ReflectionParameter $property;
 
     private mixed $value;
 
-    public function __construct(ReflectionProperty $property, mixed $value)
+    public function __construct(ReflectionProperty|ReflectionParameter $property, mixed $value)
     {
         $this->property = $property;
         $this->value = $value;
@@ -33,7 +34,7 @@ class Property
         $this->value = $value;
     }
 
-    public function getReflection(): ReflectionProperty
+    public function getReflection(): ReflectionProperty|ReflectionParameter
     {
         return $this->property;
     }

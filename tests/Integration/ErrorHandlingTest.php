@@ -237,3 +237,24 @@ test('Error handling - stop first error nested', function (bool $isStrict) {
 })
     ->with([true, false])
     ->group('validator', 'error-handling', 'nested');
+
+test('Error handling - stop first error basic - not initialized', function (bool $isStrict) {
+    $validator = new Validator(stopFirstError: true, strict: $isStrict);
+    $rawData = ['int' => 'invalid'];
+    try {
+        $validator->validate($rawData, new class
+        {
+            public bool $bool;
+
+            public int $int;
+        });
+    } catch (ValidationException $e) {
+        expect($e->getMessage())
+            ->toBe('Invalid data')
+            ->and($e->getErrors())
+            ->toBeArray()
+            ->toBe([['field' => 'bool', 'reason' => 'Missing required property \'bool\'']]);
+    }
+})
+    ->with([true, false])
+    ->group('validator', 'error-handling', 'basic');
