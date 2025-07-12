@@ -245,11 +245,12 @@ class Validator implements Validatable
      */
     protected function isToValidate(ReflectionProperty|ReflectionParameter $reflection): bool
     {
+        $useSerialization = $this->context->getOptional('internal.options.ignore.useSerialization', false);
         $allAttributes = $reflection->getAttributes(Options\Ignore::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 
-            return ! $instance->ignoreValidation();
+            return $useSerialization ? ! $instance->ignoreSerialization() : ! $instance->ignoreValidation();
         }
 
         return true;

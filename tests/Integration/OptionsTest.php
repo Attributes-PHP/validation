@@ -15,6 +15,7 @@ namespace Attributes\Validation\Tests\Integration;
 use Attributes\Options as Options;
 use Attributes\Options\Exceptions\InvalidOptionException;
 use Attributes\Options\Ignore;
+use Attributes\Validation\Context;
 use Attributes\Validation\Tests\Models as Models;
 use Attributes\Validation\Validator;
 
@@ -130,8 +131,9 @@ test('Ignore', function (bool $isStrict) {
     $validator = new Validator(strict: $isStrict);
     $rawData = [
         'value' => 'my value',
-        'ignore' => 'ignored',
-        'ignoreValidation' => 'ignored',
+        'ignore' => 'both',
+        'ignoreValidation' => 'validation',
+        'ignoreSerialization' => 'serialization',
     ];
     $model = $validator->validate($rawData, new class
     {
@@ -142,11 +144,47 @@ test('Ignore', function (bool $isStrict) {
 
         #[Ignore(serialization: false)]
         public string $ignoreValidation = 'original';
+
+        #[Ignore(validation: false)]
+        public string $ignoreSerialization = 'original';
     });
     expect($model)
         ->toHaveProperty('value', 'my value')
         ->toHaveProperty('ignore', 'original')
-        ->toHaveProperty('ignoreValidation', 'original');
+        ->toHaveProperty('ignoreValidation', 'original')
+        ->toHaveProperty('ignoreSerialization', 'serialization');
+})
+    ->with([true, false])
+    ->group('validator', 'options', 'ignore');
+
+test('Ignore as a serializer', function (bool $isStrict) {
+    $context = new Context;
+    $context->set('internal.options.ignore.useSerialization', true);
+    $validator = new Validator(strict: $isStrict, context: $context);
+    $rawData = [
+        'value' => 'my value',
+        'ignore' => 'both',
+        'ignoreValidation' => 'validation',
+        'ignoreSerialization' => 'serialization',
+    ];
+    $model = $validator->validate($rawData, new class
+    {
+        public string $value;
+
+        #[Ignore]
+        public string $ignore = 'original';
+
+        #[Ignore(serialization: false)]
+        public string $ignoreValidation = 'original';
+
+        #[Ignore(validation: false)]
+        public string $ignoreSerialization = 'original';
+    });
+    expect($model)
+        ->toHaveProperty('value', 'my value')
+        ->toHaveProperty('ignore', 'original')
+        ->toHaveProperty('ignoreValidation', 'validation')
+        ->toHaveProperty('ignoreSerialization', 'original');
 })
     ->with([true, false])
     ->group('validator', 'options', 'ignore');
