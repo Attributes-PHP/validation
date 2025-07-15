@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Attributes\Validation;
 
+use ArrayAccess;
 use Attributes\Options;
 use Attributes\Options\Exceptions\InvalidOptionException;
 use Attributes\Validation\Exceptions\ContextPropertyException;
@@ -51,7 +52,7 @@ class Validator implements Validatable
     /**
      * Validates a given data according to a given model
      *
-     * @param  array  $data  - Data to validate
+     * @param  array|ArrayAccess  $data  - Data to validate
      * @param  string|object  $model  - Model to validate against
      * @return object - Model populated with the validated data
      *
@@ -60,7 +61,7 @@ class Validator implements Validatable
      * @throws ReflectionException
      * @throws InvalidOptionException
      */
-    public function validate(array $data, string|object $model): object
+    public function validate(array|ArrayAccess $data, string|object $model): object
     {
         $currentLevel = $this->context->getOptional('internal.recursionLevel', 0);
         $maxRecursionLevel = $this->context->getOptional('internal.maxRecursionLevel', 30);
@@ -127,7 +128,7 @@ class Validator implements Validatable
     /**
      * Validates a given data according to a given model
      *
-     * @param  array  $data  - Data to validate
+     * @param  array|ArrayAccess  $data  - Data to validate
      * @param  callable  $call  - Callable to validate data against
      * @return array - Returns an array with the necessary arguments for the callable
      *
@@ -136,14 +137,14 @@ class Validator implements Validatable
      * @throws ReflectionException
      * @throws InvalidOptionException
      */
-    public function validateCallable(array $data, callable $call): array
+    public function validateCallable(array|ArrayAccess $data, callable $call): array
     {
         $arguments = [];
         $reflectionFunction = new ReflectionFunction($call);
         $errorInfo = $this->context->getOptional(ErrorHolder::class) ?: new ErrorHolder($this->context);
         $this->context->set(ErrorHolder::class, $errorInfo, override: true);
         $defaultAliasGenerator = $this->getDefaultAliasGenerator($reflectionFunction);
-        foreach ($reflectionFunction->getParameters() as $parameter) {
+        foreach ($reflectionFunction->getParameters() as $index => $parameter) {
             if (! $this->isToValidate($parameter)) {
                 continue;
             }
@@ -152,7 +153,7 @@ class Validator implements Validatable
             $aliasName = $this->getAliasName($parameter, $defaultAliasGenerator);
             $this->context->push('internal.currentProperty', $propertyName);
 
-            if (! array_key_exists($aliasName, $data)) {
+            if (! array_key_exists($aliasName, $data) && ! array_key_exists($index, $data)) {
                 if (! $parameter->isDefaultValueAvailable()) {
                     try {
                         $errorInfo->addError("Missing required argument '$aliasName'");
@@ -166,7 +167,7 @@ class Validator implements Validatable
                 continue;
             }
 
-            $propertyValue = $data[$aliasName];
+            $propertyValue = $data[$index] ?? $data[$aliasName];
             $property = new Property($parameter, $propertyValue);
             $this->context->set(Property::class, $property, override: true);
 
