@@ -8,26 +8,26 @@ declare(strict_types=1);
 
 namespace Attributes\Validation;
 
-use ArrayAccess;
+use ArrayObject;
 use Attributes\Validation\Exceptions\ValidationException;
 
 interface Validatable
 {
     /**
-     * @param  array|ArrayAccess  $data  - Data to be validated
+     * @param  array|ArrayObject  $data  - Data to be validated
      * @param  object  $model  - Model to validate against
      *
      * @throws ValidationException - If the validation fails
      */
-    public function validate(array|ArrayAccess $data, object $model): object;
+    public function validate(array|ArrayObject $data, object $model): object;
 
     /**
-     * @param  array|ArrayAccess  $data  - Data to be validated
+     * @param  array|ArrayObject  $data  - Data to be validated
      * @param  callable  $call  - Callable to be validated
      *
      * @returns array - Arguments in a sequence order for the given function
      *
      * @throws ValidationException - If the validation fails
      */
-    public function validateCallable(array|ArrayAccess $data, callable $call): array;
+    public function validateCallable(array|ArrayObject $data, callable $call): array;
 }
