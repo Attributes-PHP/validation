@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Attributes\Validation;
 
-use ArrayAccess;
+use ArrayObject;
 use Attributes\Options;
 use Attributes\Options\Exceptions\InvalidOptionException;
 use Attributes\Validation\Exceptions\ContextPropertyException;
@@ -52,7 +52,7 @@ class Validator implements Validatable
     /**
      * Validates a given data according to a given model
      *
-     * @param  array|ArrayAccess  $data  - Data to validate
+     * @param  array|ArrayObject  $data  - Data to validate
      * @param  string|object  $model  - Model to validate against
      * @return object - Model populated with the validated data
      *
@@ -61,7 +61,7 @@ class Validator implements Validatable
      * @throws ReflectionException
      * @throws InvalidOptionException
      */
-    public function validate(array|ArrayAccess $data, string|object $model): object
+    public function validate(array|ArrayObject $data, string|object $model): object
     {
         $currentLevel = $this->context->getOptional('internal.recursionLevel', 0);
         $maxRecursionLevel = $this->context->getOptional('internal.maxRecursionLevel', 30);
@@ -87,7 +87,7 @@ class Validator implements Validatable
             $aliasName = $this->getAliasName($reflectionProperty, $defaultAliasGenerator);
             $this->context->push('internal.currentProperty', $propertyName);
 
-            if (! array_key_exists($aliasName, $data)) {
+            if (! array_key_exists($aliasName, (array) $data)) {
                 if (! $reflectionProperty->isInitialized($validModel)) {
                     try {
                         $errorInfo->addError("Missing required property '$aliasName'");
@@ -128,7 +128,7 @@ class Validator implements Validatable
     /**
      * Validates a given data according to a given model
      *
-     * @param  array|ArrayAccess  $data  - Data to validate
+     * @param  array|ArrayObject  $data  - Data to validate
      * @param  callable  $call  - Callable to validate data against
      * @return array - Returns an array with the necessary arguments for the callable
      *
@@ -137,7 +137,7 @@ class Validator implements Validatable
      * @throws ReflectionException
      * @throws InvalidOptionException
      */
-    public function validateCallable(array|ArrayAccess $data, callable $call): array
+    public function validateCallable(array|ArrayObject $data, callable $call): array
     {
         $arguments = [];
         $reflectionFunction = new ReflectionFunction($call);
@@ -153,7 +153,7 @@ class Validator implements Validatable
             $aliasName = $this->getAliasName($parameter, $defaultAliasGenerator);
             $this->context->push('internal.currentProperty', $propertyName);
 
-            if (! array_key_exists($aliasName, $data) && ! array_key_exists($index, $data)) {
+            if (! array_key_exists($aliasName, (array) $data) && ! array_key_exists($index, (array) $data)) {
                 if (! $parameter->isDefaultValueAvailable()) {
                     try {
                         $errorInfo->addError("Missing required argument '$aliasName'");
