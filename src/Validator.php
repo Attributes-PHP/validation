@@ -153,7 +153,8 @@ class Validator implements Validatable
             $aliasName = $this->getAliasName($parameter, $defaultAliasGenerator);
             $this->context->push('internal.currentProperty', $propertyName);
 
-            if (! array_key_exists($aliasName, (array) $data) && ! array_key_exists($index, (array) $data)) {
+            $propertyValue = $data[$index] ?? $data[$aliasName] ?? null; // Lazy load data
+            if (! array_key_exists($index, (array) $data) && ! array_key_exists($aliasName, (array) $data)) {
                 if (! $parameter->isDefaultValueAvailable()) {
                     try {
                         $errorInfo->addError("Missing required argument '$aliasName'");
@@ -167,7 +168,6 @@ class Validator implements Validatable
                 continue;
             }
 
-            $propertyValue = $data[$index] ?? $data[$aliasName];
             $property = new Property($parameter, $propertyValue);
             $this->context->set(Property::class, $property, override: true);
 
