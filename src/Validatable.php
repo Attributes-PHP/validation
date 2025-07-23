@@ -15,11 +15,11 @@ interface Validatable
 {
     /**
      * @param  array|ArrayObject  $data  - Data to be validated
-     * @param  object  $model  - Model to validate against
+     * @param  string|object  $model  - Model to validate against
      *
      * @throws ValidationException - If the validation fails
      */
-    public function validate(array|ArrayObject $data, object $model): object;
+    public function validate(array|ArrayObject $data, string|object $model): object;
 
     /**
      * @param  array|ArrayObject  $data  - Data to be validated
