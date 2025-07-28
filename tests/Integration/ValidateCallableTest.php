@@ -16,6 +16,7 @@ use Attributes\Options;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Tests\Models as Models;
 use Attributes\Validation\Validator;
+use DateTime;
 
 // Alias and alias generator
 
@@ -176,3 +177,23 @@ test('Numbered arguments - validate callable', function (bool $isStrict) {
 })
     ->with([true, false])
     ->group('validator', 'validate-callable', 'numbered-arguments');
+
+// Callable
+
+test('Callable - validate callable', function (bool $isStrict, mixed $callable) {
+    $validator = new Validator(strict: $isStrict);
+    $rawData = ['value' => $callable];
+    $call = function (callable $value) {
+        return 'success';
+    };
+    $args = $validator->validateCallable($rawData, $call);
+    expect($args)
+        ->toBeArray()
+        ->toHaveCount(1)
+        ->toBe([
+            'value' => $callable,
+        ]);
+})
+    ->with([true, false])
+    ->with(['trim', [[new DateTime, 'format']], fn () => true])
+    ->group('validator', 'validate-callable', 'callable');

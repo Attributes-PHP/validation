@@ -667,3 +667,24 @@ test('Invalid int enum', function ($value, bool $isStrict) {
     ->throws(ValidationException::class, 'Invalid data')
     ->with([true, false])
     ->group('validator', 'basic', 'enum', 'int enum');
+
+// Mixed validation
+
+test('Mixed type', function ($value) {
+    $validator = new Validator;
+    $model = $validator->validate(['value' => $value], new Models\RawMixed);
+    expect($model)
+        ->toBeInstanceOf(Models\RawMixed::class)
+        ->toHaveProperty('value', $value);
+})
+    ->with('mixed')
+    ->group('validator', 'basic', 'mixed');
+
+test('Using default value - mixed', function () {
+    $validator = new Validator;
+    $model = $validator->validate([], new Models\DefaultMixed);
+    expect($model)
+        ->toBeInstanceOf(Models\DefaultMixed::class)
+        ->toHaveProperty('value', 'default');
+})
+    ->group('validator', 'basic', 'mixed');
