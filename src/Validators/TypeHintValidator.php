@@ -35,10 +35,12 @@ class TypeHintValidator implements PropertyValidator
         'object' => 'object',
         'enum' => 'enum',
         'null' => 'null',
+        'mixed' => 'mixed',
+        'interface' => 'interface',
+        'callable' => 'callable',
+        'default' => 'default',
         DateTime::class => DateTime::class,
         DateTimeInterface::class => DateTime::class,
-        'interface' => 'interface',
-        'default' => 'default',
     ];
 
     public function __construct(array $typeHintRules = [], array $typeAliases = [])
@@ -138,6 +140,8 @@ class TypeHintValidator implements PropertyValidator
             'object' => new TypeValidators\RawObject,
             'enum' => new TypeValidators\RawEnum,
             'null' => new TypeValidators\RawNull,
+            'mixed' => new TypeValidators\RawMixed,
+            'callable' => new TypeValidators\RawCallable,
             DateTime::class => new TypeValidators\DateTime,
             'interface' => new TypeValidators\StrictType,
             ArrayObject::class => new TypeValidators\ArrayObject,

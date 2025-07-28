@@ -106,3 +106,21 @@ dataset('int enum', [
     Models\RawIntEnum::GUEST,
     Models\RawIntEnum::ADMIN,
 ]);
+
+dataset('mixed', [
+    'value',
+    10,
+    5.5,
+    Models\RawIntEnum::GUEST,
+    fn () => true,
+    null,
+    [[1, 2, 3]],
+    (object) [[1, 2, 3]],
+    true,
+    false,
+    new DateTime,
+    new class
+    {
+        public string $name;
+    },
+]);
