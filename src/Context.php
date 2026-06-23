@@ -2,18 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AttributesValidation;
+namespace Attributes\Validation;
 
-use AttributesValidationExceptionsContextPropertyException;
+use Attributes\Validation\Exceptions\ContextPropertyException;
 
 class Context
 {
     public array $global = [];
     
-    /**
-     * Stack-based storage for push/pop operations
-     * @var array<string, array>
-     */
     private array $stacks = [];
 
     public function set(string $propertyName, mixed $value, bool $override = false): void
@@ -25,9 +21,6 @@ class Context
         $this->global[$propertyName] = $value;
     }
 
-    /**
-     * @throws ContextPropertyException
-     */
     public function get(string $propertyName): mixed
     {
         if (! $this->has($propertyName)) {
@@ -42,12 +35,8 @@ class Context
         return $value;
     }
 
-    /**
-     * @throws ContextPropertyException
-     */
     public function getOptional(string $propertyName, mixed $defaultValue = null): mixed
     {
-        // Direct array access is faster than calling has() then get()
         return $this->global[$propertyName] ?? $defaultValue;
     }
 
@@ -79,18 +68,11 @@ class Context
         return $this->global;
     }
 
-    /**
-     * Get stack values for a property
-     * @return array
-     */
     public function getStack(string $propertyName): array
     {
         return $this->stacks[$propertyName] ?? [];
     }
 
-    /**
-     * Check if a property has stack values
-     */
     public function hasStack(string $propertyName): bool
     {
         return !empty($this->stacks[$propertyName]);
