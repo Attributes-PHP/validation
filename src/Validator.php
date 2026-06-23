@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AttributesValidation;
 
 use ArrayObject;
-use AttributesOptions;
+use AttributesOptionsAlias;
+use AttributesOptionsAliasGenerator;
+use AttributesOptionsIgnore;
 use AttributesOptionsExceptionsInvalidOptionException;
 use AttributesValidationCacheReflectionCache;
 use AttributesValidationExceptionsContextPropertyException;
@@ -221,7 +223,7 @@ class Validator implements Validatable
      */
     protected function getDefaultAliasGenerator(ReflectionClass|ReflectionFunction $reflection): callable
     {
-        $allAttributes = $reflection->getAttributes(OptionsAliasGenerator::class);
+        $allAttributes = $reflection->getAttributes(AliasGenerator::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 
@@ -233,9 +235,9 @@ class Validator implements Validatable
             return $aliasGenerator;
         }
 
-        $aliasGenerator = new OptionsAliasGenerator($aliasGenerator);
+        $aliasGeneratorClass = new AliasGenerator($aliasGenerator);
 
-        return $aliasGenerator->getAliasGenerator();
+        return $aliasGeneratorClass->getAliasGenerator();
     }
 
     /**
@@ -244,7 +246,7 @@ class Validator implements Validatable
     protected function getAliasName(ReflectionProperty|ReflectionParameter $reflection, callable $defaultAliasGenerator): string
     {
         $propertyName = $reflection->getName();
-        $allAttributes = $reflection->getAttributes(OptionsAlias::class);
+        $allAttributes = $reflection->getAttributes(Alias::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 
@@ -260,7 +262,7 @@ class Validator implements Validatable
     protected function isToValidate(ReflectionProperty|ReflectionParameter $reflection): bool
     {
         $useSerialization = $this->context->getOptional('internal.options.ignore.useSerialization', false);
-        $allAttributes = $reflection->getAttributes(OptionsIgnore::class);
+        $allAttributes = $reflection->getAttributes(Ignore::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 
