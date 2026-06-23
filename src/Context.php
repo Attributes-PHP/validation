@@ -2,13 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Attributes\Validation;
+namespace AttributesValidation;
 
-use Attributes\Validation\Exceptions\ContextPropertyException;
+use AttributesValidationExceptionsContextPropertyException;
 
 class Context
 {
     public array $global = [];
+    
+    /**
+     * Stack-based storage for push/pop operations
+     * @var array<string, array>
+     */
+    private array $stacks = [];
 
     public function set(string $propertyName, mixed $value, bool $override = false): void
     {
@@ -41,38 +47,52 @@ class Context
      */
     public function getOptional(string $propertyName, mixed $defaultValue = null): mixed
     {
-        if ($this->has($propertyName)) {
-            return $this->get($propertyName);
-        }
-
-        return $defaultValue;
+        // Direct array access is faster than calling has() then get()
+        return $this->global[$propertyName] ?? $defaultValue;
     }
 
     public function has(string $propertyName): bool
     {
-        return array_key_exists($propertyName, $this->global);
+        return isset($this->global[$propertyName]);
     }
 
     public function push(string $propertyName, mixed $value): void
     {
-        if (! $this->has($propertyName)) {
-            $this->global[$propertyName] = [];
+        if (!isset($this->stacks[$propertyName])) {
+            $this->stacks[$propertyName] = [];
         }
 
-        $this->global[$propertyName][] = $value;
+        $this->stacks[$propertyName][] = $value;
     }
 
     public function pop(string $propertyName): mixed
     {
-        if (! $this->has($propertyName)) {
+        if (empty($this->stacks[$propertyName])) {
             return null;
         }
 
-        return array_pop($this->global[$propertyName]);
+        return array_pop($this->stacks[$propertyName]);
     }
 
     public function getAll(): array
     {
         return $this->global;
+    }
+
+    /**
+     * Get stack values for a property
+     * @return array
+     */
+    public function getStack(string $propertyName): array
+    {
+        return $this->stacks[$propertyName] ?? [];
+    }
+
+    /**
+     * Check if a property has stack values
+     */
+    public function hasStack(string $propertyName): bool
+    {
+        return !empty($this->stacks[$propertyName]);
     }
 }
