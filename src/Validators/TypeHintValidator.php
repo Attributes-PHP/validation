@@ -6,7 +6,6 @@ namespace Attributes\Validation\Validators;
 
 use ArrayObject;
 use Attributes\Validation\Context;
-use Attributes\Validation\Exceptions\ContextPropertyException;
 use Attributes\Validation\Exceptions\ValidationException;
 use Attributes\Validation\Property;
 use Attributes\Validation\Validators\Types as TypeValidators;
@@ -21,6 +20,8 @@ use Respect\Validation\Exceptions\ValidationException as RespectValidationExcept
 class TypeHintValidator implements PropertyValidator
 {
     private array $typeHintRules;
+
+    private static array $typeValidatorCache = [];
 
     private array $typeAliases = [
         'bool' => 'bool',
@@ -49,14 +50,6 @@ class TypeHintValidator implements PropertyValidator
         $this->typeAliases = array_merge($this->typeAliases, $typeAliases);
     }
 
-    /**
-     * Yields each validation rule of a given property
-     *
-     * @param  Property  $property  - Property to yield the rules from
-     *
-     * @throws ValidationException
-     * @throws ContextPropertyException
-     */
     public function validate(Property $property, Context $context): void
     {
         $reflectionProperty = $property->getReflection();
@@ -66,10 +59,13 @@ class TypeHintValidator implements PropertyValidator
 
         $context->set(self::class, $this, override: true);
         $propertyType = $reflectionProperty->getType();
+
+        $context->set(ReflectionType::class, $propertyType, override: true);
+
         if ($propertyType instanceof ReflectionNamedType) {
             $this->validateByType($propertyType, $property, $context);
         } elseif ($propertyType instanceof ReflectionUnionType) {
-            $this->validateUnion($propertyType, $property, $context);
+            $this->validateUnionOptimized($propertyType, $property, $context);
         } elseif ($propertyType instanceof ReflectionIntersectionType) {
             foreach ($propertyType->getTypes() as $type) {
                 $this->validateByType($type, $property, $context);
@@ -79,39 +75,43 @@ class TypeHintValidator implements PropertyValidator
         }
     }
 
-    private function validateUnion(ReflectionUnionType $propertyType, Property $property, Context $context): void
+    private function validateUnionOptimized(ReflectionUnionType $propertyType, Property $property, Context $context): void
     {
-        $valueType = gettype($property->getValue());
+        $value = $property->getValue();
+        $valueType = gettype($value);
         $allTypes = $propertyType->getTypes();
-        if (isset($this->typeAliases[$valueType])) {
-            $valueType = $this->typeAliases[$valueType];
+
+        if ($value === null) {
             foreach ($allTypes as $type) {
-                if ($type->getName() !== $valueType) {
-                    continue;
-                }
-
-                try {
-                    $this->typeHintRules[$valueType]->validate($property, $context);
-
+                if ($type->allowsNull()) {
                     return;
-                } catch (RespectValidationException $e) {
                 }
-                break;
             }
-        } else {
-            $valueType = null;
+        }
+
+        if (isset($this->typeAliases[$valueType])) {
+            $resolvedValueType = $this->typeAliases[$valueType];
+            foreach ($allTypes as $type) {
+                $typeName = $type->getName();
+                if ($typeName === $resolvedValueType || $typeName === $valueType) {
+                    try {
+                        $this->validateByType($type, $property, $context);
+
+                        return;
+                    } catch (RespectValidationException) {
+                        continue;
+                    }
+                }
+            }
         }
 
         foreach ($allTypes as $type) {
-            if ($valueType === $type->getName()) {
-                continue;
-            }
-
             try {
                 $this->validateByType($type, $property, $context);
 
                 return;
-            } catch (RespectValidationException $error) {
+            } catch (RespectValidationException) {
+                continue;
             }
         }
 
@@ -120,15 +120,12 @@ class TypeHintValidator implements PropertyValidator
 
     private function validateByType(ReflectionNamedType|ReflectionType $type, Property $property, Context $context): void
     {
-        $typeHintValidator = $this->getTypeValidator($type);
+        $typeHintValidator = $this->getTypeValidatorCached($type);
         $context->set(ReflectionNamedType::class, $type, override: true);
         $context->set('property.typeHint', $type->getName(), override: true);
         $typeHintValidator->validate($property, $context);
     }
 
-    /**
-     * Retrieves default type hint rules extractors according to their type hint
-     */
     private function getDefaultRules(): array
     {
         return [
@@ -149,9 +146,6 @@ class TypeHintValidator implements PropertyValidator
         ];
     }
 
-    /**
-     * Retrieves the type-hint validator according to the given property type
-     */
     public function getTypeValidator(ReflectionNamedType|ReflectionType $propertyType, bool $ignoreNull = false): TypeValidators\BaseType
     {
         if ($propertyType->allowsNull() && ! $ignoreNull) {
@@ -174,5 +168,21 @@ class TypeHintValidator implements PropertyValidator
         }
 
         return $this->typeHintRules[$typeName];
+    }
+
+    private function getTypeValidatorCached(ReflectionNamedType|ReflectionType $propertyType): TypeValidators\BaseType
+    {
+        $cacheKey = $propertyType->getName().($propertyType->allowsNull() ? ':nullable' : '');
+
+        if (! isset(self::$typeValidatorCache[$cacheKey])) {
+            self::$typeValidatorCache[$cacheKey] = $this->getTypeValidator($propertyType);
+        }
+
+        return self::$typeValidatorCache[$cacheKey];
+    }
+
+    public static function clearCache(): void
+    {
+        self::$typeValidatorCache = [];
     }
 }

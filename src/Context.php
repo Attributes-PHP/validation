@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Attributes\Validation;
 
-use Attributes\Validation\Exceptions\ContextPropertyException;
-
 class Context
 {
     public array $global = [];
@@ -41,8 +39,13 @@ class Context
      */
     public function getOptional(string $propertyName, mixed $defaultValue = null): mixed
     {
-        if ($this->has($propertyName)) {
-            return $this->get($propertyName);
+        if (array_key_exists($propertyName, $this->global)) {
+            $value = $this->global[$propertyName];
+            if (class_exists($propertyName) && ! ($value instanceof $propertyName)) {
+                throw new ContextPropertyException('Invalid property type: '.$propertyName);
+            }
+
+            return $value;
         }
 
         return $defaultValue;
