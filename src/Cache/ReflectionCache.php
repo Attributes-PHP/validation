@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AttributesValidationCache;
+namespace Attributes\Validation\Cache;
 
 use ReflectionClass;
 use ReflectionProperty;
