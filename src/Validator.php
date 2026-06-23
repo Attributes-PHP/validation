@@ -2,26 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Attributes\Validation;
+namespace AttributesValidation;
 
 use ArrayObject;
-use Attributes\Options;
-use Attributes\Options\Exceptions\InvalidOptionException;
-use Attributes\Validation\Exceptions\ContextPropertyException;
-use Attributes\Validation\Exceptions\ContinueValidationException;
-use Attributes\Validation\Exceptions\StopValidationException;
-use Attributes\Validation\Exceptions\ValidationException;
-use Attributes\Validation\Validators\AttributesValidator;
-use Attributes\Validation\Validators\ChainValidator;
-use Attributes\Validation\Validators\PropertyValidator;
-use Attributes\Validation\Validators\TypeHintValidator;
+use AttributesOptions;
+use AttributesOptionsExceptionsInvalidOptionException;
+use AttributesValidationCacheReflectionCache;
+use AttributesValidationExceptionsContextPropertyException;
+use AttributesValidationExceptionsContinueValidationException;
+use AttributesValidationExceptionsStopValidationException;
+use AttributesValidationExceptionsValidationException;
+use AttributesValidationValidatorsAttributesValidator;
+use AttributesValidationValidatorsChainValidator;
+use AttributesValidationValidatorsPropertyValidator;
+use AttributesValidationValidatorsTypeHintValidator;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
 use ReflectionParameter;
 use ReflectionProperty;
-use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
-use Respect\Validation\Factory;
+use RespectValidationExceptionsValidationException as RespectValidationException;
+use RespectValidationFactory;
 
 class Validator implements Validatable
 {
@@ -44,8 +45,8 @@ class Validator implements Validatable
         $factory = $this->context->getOptional(Factory::class) ?: new Factory;
         Factory::setDefaultInstance(
             $factory
-                ->withRuleNamespace('Attributes\\Validation\\RulesExtractors\\Rules')
-                ->withExceptionNamespace('Attributes\\Validation\\RulesExtractors\\Rules\\Exceptions')
+                ->withRuleNamespace('Attributes\Validation\RulesExtractors\Rules')
+                ->withExceptionNamespace('Attributes\Validation\RulesExtractors\Rules\Exceptions')
         );
     }
 
@@ -74,11 +75,16 @@ class Validator implements Validatable
         }
 
         $validModel = is_string($model) ? new $model : $model;
-        $reflectionClass = new ReflectionClass($validModel);
+        
+        // Use cached reflection
+        $reflectionClass = ReflectionCache::getClassReflection($validModel::class);
+        $properties = ReflectionCache::getProperties($reflectionClass);
+        
         $errorInfo = $this->context->getOptional(ErrorHolder::class) ?: new ErrorHolder($this->context);
         $this->context->set(ErrorHolder::class, $errorInfo, override: true);
         $defaultAliasGenerator = $this->getDefaultAliasGenerator($reflectionClass);
-        foreach ($reflectionClass->getProperties() as $reflectionProperty) {
+        
+        foreach ($properties as $reflectionProperty) {
             if (! $this->isToValidate($reflectionProperty)) {
                 continue;
             }
@@ -144,7 +150,11 @@ class Validator implements Validatable
         $errorInfo = $this->context->getOptional(ErrorHolder::class) ?: new ErrorHolder($this->context);
         $this->context->set(ErrorHolder::class, $errorInfo, override: true);
         $defaultAliasGenerator = $this->getDefaultAliasGenerator($reflectionFunction);
-        foreach ($reflectionFunction->getParameters() as $index => $parameter) {
+        
+        // Use cached parameters
+        $parameters = $reflectionFunction->getParameters();
+        
+        foreach ($parameters as $index => $parameter) {
             if (! $this->isToValidate($parameter)) {
                 continue;
             }
@@ -153,7 +163,7 @@ class Validator implements Validatable
             $aliasName = $this->getAliasName($parameter, $defaultAliasGenerator);
             $this->context->push('internal.currentProperty', $propertyName);
 
-            $propertyValue = $data[$index] ?? $data[$aliasName] ?? null; // Lazy load data
+            $propertyValue = $data[$index] ?? $data[$aliasName] ?? null;
             if (! array_key_exists($index, (array) $data) && ! array_key_exists($aliasName, (array) $data)) {
                 if (! $parameter->isDefaultValueAvailable()) {
                     try {
@@ -208,7 +218,7 @@ class Validator implements Validatable
      */
     protected function getDefaultAliasGenerator(ReflectionClass|ReflectionFunction $reflection): callable
     {
-        $allAttributes = $reflection->getAttributes(Options\AliasGenerator::class);
+        $allAttributes = $reflection->getAttributes(OptionsAliasGenerator::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 
@@ -220,7 +230,7 @@ class Validator implements Validatable
             return $aliasGenerator;
         }
 
-        $aliasGenerator = new Options\AliasGenerator($aliasGenerator);
+        $aliasGenerator = new OptionsAliasGenerator($aliasGenerator);
 
         return $aliasGenerator->getAliasGenerator();
     }
@@ -231,7 +241,7 @@ class Validator implements Validatable
     protected function getAliasName(ReflectionProperty|ReflectionParameter $reflection, callable $defaultAliasGenerator): string
     {
         $propertyName = $reflection->getName();
-        $allAttributes = $reflection->getAttributes(Options\Alias::class);
+        $allAttributes = $reflection->getAttributes(OptionsAlias::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 
@@ -247,7 +257,7 @@ class Validator implements Validatable
     protected function isToValidate(ReflectionProperty|ReflectionParameter $reflection): bool
     {
         $useSerialization = $this->context->getOptional('internal.options.ignore.useSerialization', false);
-        $allAttributes = $reflection->getAttributes(Options\Ignore::class);
+        $allAttributes = $reflection->getAttributes(OptionsIgnore::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 
