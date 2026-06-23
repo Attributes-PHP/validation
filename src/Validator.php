@@ -2,29 +2,31 @@
 
 declare(strict_types=1);
 
-namespace AttributesValidation;
+namespace Attributes\Validation;
 
 use ArrayObject;
-use AttributesOptionsAlias;
-use AttributesOptionsAliasGenerator;
-use AttributesOptionsIgnore;
-use AttributesOptionsExceptionsInvalidOptionException;
-use AttributesValidationCacheReflectionCache;
-use AttributesValidationExceptionsContextPropertyException;
-use AttributesValidationExceptionsContinueValidationException;
-use AttributesValidationExceptionsStopValidationException;
-use AttributesValidationExceptionsValidationException;
-use AttributesValidationValidatorsAttributesValidator;
-use AttributesValidationValidatorsChainValidator;
-use AttributesValidationValidatorsPropertyValidator;
-use AttributesValidationValidatorsTypeHintValidator;
+use Attributes\Options;
+use Attributes\Options\Exceptions\InvalidOptionException;
+use Attributes\Validation\Cache\ReflectionCache;
+use Attributes\Validation\Context;
+use Attributes\Validation\ErrorHolder;
+use Attributes\Validation\Exceptions\ContextPropertyException;
+use Attributes\Validation\Exceptions\ContinueValidationException;
+use Attributes\Validation\Exceptions\StopValidationException;
+use Attributes\Validation\Exceptions\ValidationException;
+use Attributes\Validation\Property;
+use Attributes\Validation\Validatable;
+use Attributes\Validation\Validators\AttributesValidator;
+use Attributes\Validation\Validators\ChainValidator;
+use Attributes\Validation\Validators\PropertyValidator;
+use Attributes\Validation\Validators\TypeHintValidator;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionFunction;
 use ReflectionParameter;
 use ReflectionProperty;
-use RespectValidationExceptionsValidationException as RespectValidationException;
-use RespectValidationFactory;
+use Respect\Validation\Exceptions\ValidationException as RespectValidationException;
+use Respect\Validation\Factory;
 
 class Validator implements Validatable
 {
@@ -32,9 +34,6 @@ class Validator implements Validatable
 
     protected PropertyValidator $validator;
 
-    /**
-     * @throws ContextPropertyException
-     */
     public function __construct(?PropertyValidator $validator = null, bool $stopFirstError = false, bool $strict = false, ?Context $context = null)
     {
         $this->context = $context ?? new Context;
@@ -47,23 +46,11 @@ class Validator implements Validatable
         $factory = $this->context->getOptional(Factory::class) ?: new Factory;
         Factory::setDefaultInstance(
             $factory
-                ->withRuleNamespace('Attributes\Validation\RulesExtractors\Rules')
-                ->withExceptionNamespace('Attributes\Validation\RulesExtractors\Rules\Exceptions')
+                ->withRuleNamespace('Attributes\\Validation\\RulesExtractors\\Rules')
+                ->withExceptionNamespace('Attributes\\Validation\\RulesExtractors\\Rules\\Exceptions')
         );
     }
 
-    /**
-     * Validates a given data according to a given model
-     *
-     * @param  array|ArrayObject  $data  - Data to validate
-     * @param  string|object  $model  - Model to validate against
-     * @return object - Model populated with the validated data
-     *
-     * @throws ValidationException - If validation fails
-     * @throws ContextPropertyException - If unable to retrieve a given context property
-     * @throws ReflectionException
-     * @throws InvalidOptionException
-     */
     public function validate(array|ArrayObject $data, string|object $model): object
     {
         $currentLevel = $this->context->getOptional('internal.recursionLevel', 0);
@@ -77,11 +64,8 @@ class Validator implements Validatable
         }
 
         $validModel = is_string($model) ? new $model : $model;
-        
-        // Get class name for caching
         $className = is_string($model) ? $model : $validModel::class;
         
-        // Use cached reflection
         $reflectionClass = ReflectionCache::getClassReflection($className);
         $properties = ReflectionCache::getProperties($reflectionClass);
         
@@ -136,18 +120,6 @@ class Validator implements Validatable
         return $validModel;
     }
 
-    /**
-     * Validates a given data according to a given model
-     *
-     * @param  array|ArrayObject  $data  - Data to validate
-     * @param  callable  $call  - Callable to validate data against
-     * @return array - Returns an array with the necessary arguments for the callable
-     *
-     * @throws ValidationException - If validation fails
-     * @throws ContextPropertyException - If unable to retrieve a given context property
-     * @throws ReflectionException
-     * @throws InvalidOptionException
-     */
     public function validateCallable(array|ArrayObject $data, callable $call): array
     {
         $arguments = [];
@@ -156,7 +128,6 @@ class Validator implements Validatable
         $this->context->set(ErrorHolder::class, $errorInfo, override: true);
         $defaultAliasGenerator = $this->getDefaultAliasGenerator($reflectionFunction);
         
-        // Use cached parameters
         $parameters = $reflectionFunction->getParameters();
         
         foreach ($parameters as $index => $parameter) {
@@ -215,15 +186,9 @@ class Validator implements Validatable
         return $chainRulesExtractor;
     }
 
-    /**
-     * Retrieves the default alias generator for a given class
-     *
-     * @throws ContextPropertyException
-     * @throws InvalidOptionException
-     */
     protected function getDefaultAliasGenerator(ReflectionClass|ReflectionFunction $reflection): callable
     {
-        $allAttributes = $reflection->getAttributes(AliasGenerator::class);
+        $allAttributes = $reflection->getAttributes(Options\AliasGenerator::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 
@@ -235,18 +200,15 @@ class Validator implements Validatable
             return $aliasGenerator;
         }
 
-        $aliasGeneratorClass = new AliasGenerator($aliasGenerator);
+        $aliasGeneratorClass = new Options\AliasGenerator($aliasGenerator);
 
         return $aliasGeneratorClass->getAliasGenerator();
     }
 
-    /**
-     * Retrieves the alias for a given property
-     */
     protected function getAliasName(ReflectionProperty|ReflectionParameter $reflection, callable $defaultAliasGenerator): string
     {
         $propertyName = $reflection->getName();
-        $allAttributes = $reflection->getAttributes(Alias::class);
+        $allAttributes = $reflection->getAttributes(Options\Alias::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 
@@ -256,13 +218,10 @@ class Validator implements Validatable
         return $defaultAliasGenerator($propertyName);
     }
 
-    /**
-     * Checks if a given property is to be ignored
-     */
     protected function isToValidate(ReflectionProperty|ReflectionParameter $reflection): bool
     {
         $useSerialization = $this->context->getOptional('internal.options.ignore.useSerialization', false);
-        $allAttributes = $reflection->getAttributes(Ignore::class);
+        $allAttributes = $reflection->getAttributes(Options\Ignore::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
 
