@@ -76,8 +76,11 @@ class Validator implements Validatable
 
         $validModel = is_string($model) ? new $model : $model;
         
+        // Get class name for caching
+        $className = is_string($model) ? $model : $validModel::class;
+        
         // Use cached reflection
-        $reflectionClass = ReflectionCache::getClassReflection($validModel::class);
+        $reflectionClass = ReflectionCache::getClassReflection($className);
         $properties = ReflectionCache::getProperties($reflectionClass);
         
         $errorInfo = $this->context->getOptional(ErrorHolder::class) ?: new ErrorHolder($this->context);
