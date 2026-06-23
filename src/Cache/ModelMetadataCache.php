@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AttributesValidationCache;
 
-use AttributesOptions;
+use AttributesOptionsAliasGenerator;
+use AttributesOptionsIgnore;
 use AttributesValidationContext;
 use AttributesValidationValidatorsPropertyValidator;
-use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionParameter;
 use ReflectionProperty;
@@ -67,7 +67,7 @@ final class ModelMetadataCache
     private static function isToValidate(ReflectionProperty|ReflectionParameter $reflection, Context $context): bool
     {
         $useSerialization = $context->getOptional('internal.options.ignore.useSerialization', false);
-        $allAttributes = $reflection->getAttributes(OptionsIgnore::class);
+        $allAttributes = $reflection->getAttributes(Ignore::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
             return $useSerialization ? !$instance->ignoreSerialization() : !$instance->ignoreValidation();
@@ -80,7 +80,7 @@ final class ModelMetadataCache
      */
     private static function getDefaultAliasGenerator(ReflectionClass $reflection, Context $context): callable
     {
-        $allAttributes = $reflection->getAttributes(OptionsAliasGenerator::class);
+        $allAttributes = $reflection->getAttributes(AliasGenerator::class);
         foreach ($allAttributes as $attribute) {
             $instance = $attribute->newInstance();
             return $instance->getAliasGenerator();
@@ -91,7 +91,7 @@ final class ModelMetadataCache
             return $aliasGenerator;
         }
 
-        $aliasGeneratorClass = new OptionsAliasGenerator($aliasGenerator);
+        $aliasGeneratorClass = new AliasGenerator($aliasGenerator);
         return $aliasGeneratorClass->getAliasGenerator();
     }
 
