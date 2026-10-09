@@ -23,7 +23,7 @@ final class Hydrator
      * and whether it declares a default value, all static per class, so
      * the walk and the field-name resolution run once per class.
      *
-     * @var array<string, list<array{property: ReflectionProperty, fieldName: string, hasDefault: bool, plan: TypePlan}>>
+     * @var array<string, list<array{property: ReflectionProperty, name: string, fieldName: string, hasDefault: bool, plan: TypePlan}>>
      */
     private static array $entriesCache = [];
 
@@ -111,7 +111,7 @@ final class Hydrator
                 continue;
             }
 
-            $entry['property']->setValue($model, $result['value']);
+            $model->{$entry['name']} = $result['value'];
         }
 
         return $errors === [];
@@ -145,6 +145,7 @@ final class Hydrator
 
                 $entries[] = [
                     'property' => $property,
+                    'name' => $property->getName(),
                     'fieldName' => FieldNameResolver::resolve($property, $generator),
                     'hasDefault' => $property->hasDefaultValue(),
                     'plan' => TypeHintValidator::plan($property),
