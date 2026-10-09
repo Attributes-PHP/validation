@@ -8,6 +8,7 @@ use Attributes\Validation\BaseModel;
 use Attributes\Validation\Exceptions\ValidationException;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionProperty;
 
 /**
  * Hydrates a BaseModel instance from a raw data array.
@@ -16,6 +17,22 @@ use ReflectionMethod;
  */
 final class Hydrator
 {
+    /**
+     * The public non-static properties of each model class hierarchy,
+     * walked once per class (the model class first, up to but excluding
+     * BaseModel).
+     *
+     * @var array<string, list<ReflectionProperty>>
+     */
+    private static array $propertiesCache = [];
+
+    /**
+     * Whether each model class overrides one of the validation hooks.
+     *
+     * @var array<string, bool>
+     */
+    private static array $hooksCache = [];
+
     /**
      * Validates a raw data array against the model's type hints and
      * attributes, populates the model and runs its hooks.
@@ -52,10 +69,9 @@ final class Hydrator
     }
 
     /**
-     * Validates the public non-static properties of the model class
-     * hierarchy (the model class first, up to but excluding BaseModel).
-     *
-     * Returns true only when the shared error collection stayed empty.
+     * Validates the properties of the model class hierarchy against the
+     * raw data. Returns true only when the shared error collection stayed
+     * empty.
      */
     public static function validateModel(
         array $rawData,
@@ -64,67 +80,96 @@ final class Hydrator
         array &$errors,
         ?string $parentPath,
     ): bool {
-        for ($class = $model::class; $class !== false && $class !== BaseModel::class; $class = get_parent_class($class)) {
-            $reflection = new ReflectionClass($class);
+        foreach (self::properties($model::class) as $property) {
+            $fieldName = FieldNameResolver::resolve($property, $configs->aliasGenerator);
 
-            foreach ($reflection->getProperties() as $property) {
-                if ($property->isStatic() || $property->isPrivate() || $property->isProtected()) {
+            if (! array_key_exists($fieldName, $rawData)) {
+                if ($property->hasDefaultValue()) {
                     continue;
                 }
 
-                if ($property->getDeclaringClass()->getName() !== $class) {
-                    continue;
+                ErrorMessages::addFieldError(ErrorMessages::REQUIRED, $parentPath, $fieldName, $property, null, $errors);
+
+                if ($configs->stopAtFirstError) {
+                    return false;
                 }
 
-                $fieldName = FieldNameResolver::resolve($property, $configs->aliasGenerator);
-
-                if (! array_key_exists($fieldName, $rawData)) {
-                    if ($property->hasDefaultValue()) {
-                        continue;
-                    }
-
-                    ErrorMessages::addFieldError(ErrorMessages::REQUIRED, $parentPath, $fieldName, $property, null, $errors);
-
-                    if ($configs->stopAtFirstError) {
-                        return false;
-                    }
-
-                    continue;
-                }
-
-                $value = $rawData[$fieldName];
-                $result = TypeHintValidator::validate($value, $property, $configs, $errors, $parentPath, $fieldName);
-
-                if (! $result['ok']) {
-                    if ($configs->stopAtFirstError) {
-                        return false;
-                    }
-
-                    continue;
-                }
-
-                $property->setValue($model, $result['value']);
+                continue;
             }
+
+            $value = $rawData[$fieldName];
+            $result = TypeHintValidator::validate($value, $property, $configs, $errors, $parentPath, $fieldName);
+
+            if (! $result['ok']) {
+                if ($configs->stopAtFirstError) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            $property->setValue($model, $result['value']);
         }
 
         return $errors === [];
     }
 
     /**
-     * Whether the model class overrides one of the validation hooks.
+     * The public non-static properties of the model class hierarchy,
+     * cached per class.
+     *
+     * @return list<ReflectionProperty>
+     */
+    private static function properties(string $class): array
+    {
+        if (isset(self::$propertiesCache[$class])) {
+            return self::$propertiesCache[$class];
+        }
+
+        $properties = [];
+
+        for ($current = $class; $current !== false && $current !== BaseModel::class; $current = get_parent_class($current)) {
+            $reflection = new ReflectionClass($current);
+
+            foreach ($reflection->getProperties() as $property) {
+                if ($property->isStatic() || $property->isPrivate() || $property->isProtected()) {
+                    continue;
+                }
+
+                if ($property->getDeclaringClass()->getName() !== $current) {
+                    continue;
+                }
+
+                $properties[] = $property;
+            }
+        }
+
+        return self::$propertiesCache[$class] = $properties;
+    }
+
+    /**
+     * Whether the model class overrides one of the validation hooks,
+     * cached per class.
      */
     private static function overridesHooks(string $class): bool
     {
+        if (array_key_exists($class, self::$hooksCache)) {
+            return self::$hooksCache[$class];
+        }
+
         $reflection = new ReflectionClass($class);
+        $overridden = false;
 
         foreach (['beforeValidation', 'afterValidation'] as $method) {
             $hook = $reflection->getMethod($method);
 
             if (! $hook instanceof ReflectionMethod || $hook->getDeclaringClass()->getName() !== BaseModel::class) {
-                return true;
+                $overridden = true;
+
+                break;
             }
         }
 
-        return false;
+        return self::$hooksCache[$class] = $overridden;
     }
 }
