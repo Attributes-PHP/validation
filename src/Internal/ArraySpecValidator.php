@@ -77,6 +77,8 @@ final class ArraySpecValidator
             $elementName = (string) $key;
 
             if (! self::keyMatchesArms($key, $spec)) {
+                $spec->keyExpected ??= self::armsExpected($spec->keyArms ?? [], false);
+
                 ErrorMessages::addFieldError(
                     ErrorMessages::TYPE,
                     $basePath,
@@ -84,7 +86,7 @@ final class ArraySpecValidator
                     $property,
                     $element,
                     $errors,
-                    self::armsExpected($spec->keyArms ?? [], false)
+                    $spec->keyExpected
                 );
 
                 $allValid = false;
@@ -101,6 +103,8 @@ final class ArraySpecValidator
 
             if ($result['status'] !== 'valid') {
                 if ($result['status'] === 'invalid') {
+                    $spec->valueExpected ??= self::armsExpected($spec->arms, $spec->isIntersection);
+
                     ErrorMessages::addFieldError(
                         ErrorMessages::TYPE,
                         $basePath,
@@ -108,7 +112,7 @@ final class ArraySpecValidator
                         $property,
                         $element,
                         $errors,
-                        self::armsExpected($spec->arms, $spec->isIntersection)
+                        $spec->valueExpected
                     );
                 }
 

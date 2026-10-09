@@ -23,4 +23,12 @@ final class Spec
     public ?array $keyArms = null;
 
     public bool $isIntersection = false;
+
+    /**
+     * The rendered expected-type strings of the value and key arms,
+     * computed lazily for repeated element errors.
+     */
+    public ?string $valueExpected = null;
+
+    public ?string $keyExpected = null;
 }
