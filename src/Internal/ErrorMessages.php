@@ -27,6 +27,21 @@ final class ErrorMessages
     ];
 
     /**
+     * The resolved message templates per property and error type,
+     * evaluated lazily so argument errors keep surfacing per type.
+     *
+     * @var array<string, string>
+     */
+    private static array $templateCache = [];
+
+    /**
+     * The expected-type string of each property hint.
+     *
+     * @var array<string, string>
+     */
+    private static array $expectedCache = [];
+
+    /**
      * Adds an error for a field to the error collection.
      */
     public static function addFieldError(
@@ -186,6 +201,17 @@ final class ErrorMessages
             return self::DEFAULTS[$type];
         }
 
+        $cacheKey = $property->getDeclaringClass()->getName().'::$'.$property->getName()."\0".$type;
+
+        if (isset(self::$templateCache[$cacheKey])) {
+            return self::$templateCache[$cacheKey];
+        }
+
+        return self::$templateCache[$cacheKey] = self::resolveTemplate($type, $property);
+    }
+
+    private static function resolveTemplate(string $type, ReflectionProperty $property): string
+    {
         $attributes = $property->getAttributes(ErrorMessage::class);
 
         if ($attributes === []) {
@@ -235,7 +261,9 @@ final class ErrorMessages
         $expected = $expectedOverride;
 
         if ($expected === null && str_contains($template, '{expected}')) {
-            $expected = self::expectedForHint($property->getType());
+            $cacheKey = $property->getDeclaringClass()->getName().'::$'.$property->getName();
+
+            $expected = self::$expectedCache[$cacheKey] ??= self::expectedForHint($property->getType());
         }
 
         return str_replace(
