@@ -6,8 +6,6 @@ namespace Attributes\Validation;
 
 abstract class BaseModel
 {
-    protected array $errors = [];
-
     protected function beforeValidation(array $rawData, ModelConfigs $configs): array
     {
         return $rawData;

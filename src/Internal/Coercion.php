@@ -101,16 +101,16 @@ final class Coercion
         }
 
         if (is_float($value)) {
+            if (($mask & Masks::INT) && self::inIntRange($value)) {
+                return Weak::int($value);
+            }
+
             if ($mask & Masks::FLOAT) {
                 return $value;
             }
 
-            if (($mask & Masks::INT) && self::isIntegralFloat($value)) {
-                return (int) $value;
-            }
-
             if ($mask & Masks::STRING) {
-                return (string) $value;
+                return Weak::string($value);
             }
 
             return null;
@@ -140,57 +140,46 @@ final class Coercion
                 return (int) $value;
             }
 
-            $number = self::parseNumeric($value);
-
-            if (($mask & Masks::INT) && $number !== null && $number['isIntegral']) {
-                return (int) $number['value'];
+            if (! is_numeric($value)) {
+                return ($mask & Masks::STRING) !== 0 ? $value : null;
             }
 
-            if (($mask & Masks::FLOAT) && $number !== null) {
-                return (float) $number['value'];
+            $float = (float) $value;
+
+            if (($mask & Masks::INT) && self::isIntegralFloat($float) && self::inIntRange($float)) {
+                return (int) $float;
             }
 
-            if ($mask & Masks::STRING) {
-                return $value;
+            if ($mask & Masks::FLOAT) {
+                return Weak::float($value);
             }
 
-            return null;
+            // A float-string still converts to int, with the engine's
+            // precision-loss deprecation
+            if (($mask & Masks::INT) && self::inIntRange($float)) {
+                return Weak::int($value);
+            }
+
+            return ($mask & Masks::STRING) !== 0 ? $value : null;
         }
 
         return null;
     }
 
     /**
-     * Whether a float holds an integral value within the integer range.
+     * Whether a float holds an integral value.
      */
     private static function isIntegralFloat(float $value): bool
     {
-        if (is_infinite($value) || is_nan($value)) {
-            return false;
-        }
-
-        if ($value > PHP_INT_MAX || $value < PHP_INT_MIN) {
-            return false;
-        }
-
-        return (float) (int) $value === $value;
+        return ! is_infinite($value) && ! is_nan($value) && (float) (int) $value === $value;
     }
 
     /**
-     * Parses a numeric string, reporting whether the number is integral.
+     * Whether a float falls inside the range the engine converts to
+     * int: [-2^63, 2^63). NAN, INF and out-of-range values are rejected.
      */
-    private static function parseNumeric(string $value): ?array
+    private static function inIntRange(float $value): bool
     {
-        // is_numeric accepts surrounding whitespace, like the engine
-        if (! is_numeric($value)) {
-            return null;
-        }
-
-        $float = (float) $value;
-
-        return [
-            'value' => $float,
-            'isIntegral' => self::isIntegralFloat($float),
-        ];
+        return $value >= -9.223372036854776E+18 && $value < 9.223372036854776E+18;
     }
 }
