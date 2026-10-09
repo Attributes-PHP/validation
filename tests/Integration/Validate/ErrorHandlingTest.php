@@ -1,0 +1,622 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Attributes\Validation\Tests\Integration\Validate;
+
+use Attributes\Validation\BaseModel;
+use Attributes\Validation\Exceptions\ValidationException;
+use Attributes\Validation\Fields\ErrorMessage;
+use Attributes\Validation\Tests\Models\Enums\EnumBasicOneValue;
+use Attributes\Validation\Tests\Models\Enums\EnumBasicThreeValues;
+use Attributes\Validation\Tests\Models\Enums\EnumBasicTwentyValues;
+use Attributes\Validation\Tests\Models\Enums\EnumBasicTwoValues;
+use Attributes\Validation\Tests\Models\Enums\EnumIntOneValue;
+use Attributes\Validation\Tests\Models\Enums\EnumIntThreeValues;
+use Attributes\Validation\Tests\Models\Enums\EnumIntTwentyValues;
+use Attributes\Validation\Tests\Models\Enums\EnumIntTwoValues;
+use Attributes\Validation\Tests\Models\Enums\EnumStrOneValue;
+use Attributes\Validation\Tests\Models\Enums\EnumStrThreeValues;
+use Attributes\Validation\Tests\Models\Enums\EnumStrTwentyValues;
+use Attributes\Validation\Tests\Models\Enums\EnumStrTwoValues;
+use ValueError;
+
+use function Attributes\Validation\validate;
+
+// Define test classes for nested model validation
+
+class BasicModel extends BaseModel
+{
+    public string $field;
+}
+
+class SecondBasicModel extends BaseModel
+{
+    public string $secondField;
+}
+
+class ThirdBasicModel extends BaseModel
+{
+    public string $thirdField;
+}
+
+class InnerModelWithCustomMessages extends BaseModel
+{
+    #[ErrorMessage(required: '{field} is missing', type: 'Ups wrong type {expected}')]
+    public string $field;
+}
+
+class OneLevelNestedModelWithCustomMessages extends BaseModel
+{
+    public InnerModelWithCustomMessages $one;
+}
+
+// Multi-level nested model
+
+class OneLevelNestedModel extends BaseModel
+{
+    public BasicModel $one;
+}
+
+class TwoLevelNestedModel extends BaseModel
+{
+    public OneLevelNestedModel $two;
+}
+
+class ThreeLevelNestedModel extends BaseModel
+{
+    public TwoLevelNestedModel $three;
+}
+
+describe('validate function error handling', function () {
+    it('throws ValidationException for missing required fields', function () {
+        $model = new class extends BaseModel {
+            public string $name;
+        };
+
+        validate([], $model);
+    })->throws(ValidationException::class);
+
+    it('throws ValidationException with error details', function () {
+        $model = new class extends BaseModel {
+            public string $name;
+
+            public string $email;
+        };
+
+        try {
+            validate(['name' => 'John'], $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            $errors = $e->getErrors();
+            expect($errors)->toBeArray()
+                ->toHaveCount(1);
+        }
+    });
+
+    it('includes error message for required field', function () {
+        $model = new class extends BaseModel {
+            public string $name;
+        };
+
+        try {
+            validate([], $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            $errors = $e->getErrors();
+            expect($errors)->toBe([
+                'name' => ['Field is required'],
+            ]);
+        }
+    });
+
+    it('includes error messages for multiple fields', function () {
+        $model = new class extends BaseModel {
+            public string $name;
+            public string $email;
+            public int $age;
+            public bool $isAdmin;
+            public float $timestamp;
+        };
+
+        try {
+            validate([], $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            $errors = $e->getErrors();
+            $allFields = ['name', 'email', 'age', 'isAdmin', 'timestamp'];
+            expect($errors)->toHaveCount(count($allFields))
+                ->toHaveKeys($allFields);
+
+            foreach ($allFields as $name) {
+                expect($errors)->toMatchArray([$name => ['Field is required']]);
+            }
+        }
+    });
+
+    it('generates proper message for basic enums', function (BaseModel $model, string $expectedErrorMessage) {
+        try {
+            validate(['field' => 'invalid'], $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            expect($e->getErrors())->toBe([
+                'field' => [$expectedErrorMessage],
+            ]);
+        }
+    })->with([
+        '20 options' => [
+            new class extends BaseModel {
+                public EnumBasicTwentyValues $field;
+            },
+            "Must be 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen' or 'Twenty'",
+        ],
+        'three options' => [
+            new class extends BaseModel {
+                public EnumBasicThreeValues $field;
+            },
+            "Must be 'One', 'Two' or 'Three'",
+        ],
+        'two options' => [
+            new class extends BaseModel {
+                public EnumBasicTwoValues $field;
+            },
+            "Must be 'One' or 'Two'",
+        ],
+        'single option' => [
+            new class extends BaseModel {
+                public EnumBasicOneValue $field;
+            },
+            "Must be 'One'",
+        ],
+    ]);
+
+    it('generates proper message for string-backed enums', function (BaseModel $model, string $expectedErrorMessage) {
+        try {
+            validate(['field' => 'invalid'], $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            expect($e->getErrors())->toBe([
+                'field' => [$expectedErrorMessage],
+            ]);
+        }
+    })->with([
+        '20 options' => [
+            new class extends BaseModel {
+                public EnumStrTwentyValues $field;
+            },
+            "Must be 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen' or 'twenty'",
+        ],
+        'three options' => [
+            new class extends BaseModel {
+                public EnumStrThreeValues $field;
+            },
+            "Must be 'one', 'two' or 'three'",
+        ],
+        'two options' => [
+            new class extends BaseModel {
+                public EnumStrTwoValues $field;
+            },
+            "Must be 'one' or 'two'",
+        ],
+        'single option' => [
+            new class extends BaseModel {
+                public EnumStrOneValue $field;
+            },
+            "Must be 'one'",
+        ],
+    ]);
+
+    it('generates proper message for int-backed enums', function (BaseModel $model, string $expectedErrorMessage) {
+        try {
+            validate(['field' => 'invalid'], $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            expect($e->getErrors())->toBe([
+                'field' => [$expectedErrorMessage],
+            ]);
+        }
+    })->with([
+        '20 options' => [
+            new class extends BaseModel {
+                public EnumIntTwentyValues $field;
+            },
+            'Must be 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 or 20',
+        ],
+        'three options' => [
+            new class extends BaseModel {
+                public EnumIntThreeValues $field;
+            },
+            'Must be 1, 2 or 3',
+        ],
+        'two options' => [
+            new class extends BaseModel {
+                public EnumIntTwoValues $field;
+            },
+            'Must be 1 or 2',
+        ],
+        'single option' => [
+            new class extends BaseModel {
+                public EnumIntOneValue $field;
+            },
+            'Must be 1',
+        ],
+    ]);
+
+    it('generates proper message for nested models', function (BaseModel $model, array $input, array $expectedErrors) {
+        try {
+            validate($input, $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            expect($e->getErrors())->toBe($expectedErrors);
+        }
+    })->with([
+        'one-level' => [
+            'model' => new OneLevelNestedModel,
+            'input' => ['one' => []],
+            'expectedErrors' => ['one.field' => ['Field is required']],
+        ],
+        'two-level' => [
+            'model' => new TwoLevelNestedModel,
+            'input' => ['two' => ['one' => []]],
+            'expectedErrors' => ['two.one.field' => ['Field is required']],
+        ],
+        'three-level' => [
+            'model' => new ThreeLevelNestedModel,
+            'input' => ['three' => ['two' => ['one' => []]]],
+            'expectedErrors' => ['three.two.one.field' => ['Field is required']],
+        ],
+    ]);
+
+    it('generates the nested property path for a nested type error', function () {
+        $model = new class extends BaseModel {
+            public BasicModel $one;
+        };
+
+        try {
+            validate(['one' => ['field' => []]], $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getErrors())->toBe([
+                'one.field' => ['Must be string'],
+            ]);
+        }
+    });
+
+    it('generates proper message for basic unions', function (BaseModel $model, string $expectedErrorMessage) {
+        try {
+            validate(['field' => (object) []], $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            $errors = $e->getErrors();
+            expect($errors)->toBe(['field' => [$expectedErrorMessage]]);
+        }
+    })->with([
+        'two-type-hints' => [
+            'model' => new class extends BaseModel {
+                public bool|int $field;
+            },
+            'expectedErrorMessage' => 'Must be boolean or integer',
+        ],
+        'three-type-hints' => [
+            'model' => new class extends BaseModel {
+                public bool|int|float $field;
+            },
+            'expectedErrorMessage' => 'Must be boolean, integer or float',
+        ],
+        'five-type-hints' => [
+            'model' => new class extends BaseModel {
+                public bool|int|float|string|array $field;
+            },
+            'expectedErrorMessage' => 'Must be boolean, integer, float, string or array',
+        ],
+    ]);
+
+    it('generates proper message for class-only unions', function (BaseModel $model, array $expectedErrors) {
+        try {
+            validate(['field' => ['invalid' => 'bro']], $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            $errors = $e->getErrors();
+            expect($errors)->toBe($expectedErrors);
+        }
+    })->with([
+        'two-type-hints' => [
+            'model' => new class extends BaseModel {
+                public BasicModel|SecondBasicModel $field;
+            },
+            'expectedErrors' => [
+                'field.field' => ['Field is required'],
+                'field.secondField' => ['Field is required'],
+                'field' => [
+                    'Must be Attributes\Validation\Tests\Integration\Validate\BasicModel or Attributes\Validation\Tests\Integration\Validate\SecondBasicModel',
+                ],
+            ],
+        ],
+        'three-type-hints' => [
+            'model' => new class extends BaseModel {
+                public BasicModel|SecondBasicModel|ThirdBasicModel $field;
+            },
+            'expectedErrors' => [
+                'field.field' => ['Field is required'],
+                'field.secondField' => ['Field is required'],
+                'field.thirdField' => ['Field is required'],
+                'field' => [
+                    'Must be Attributes\Validation\Tests\Integration\Validate\BasicModel or Attributes\Validation\Tests\Integration\Validate\SecondBasicModel or Attributes\Validation\Tests\Integration\Validate\ThirdBasicModel',
+                ],
+            ],
+        ],
+    ]);
+
+    it('generates proper message for enum-only unions', function (BaseModel $model, array $expectedErrors) {
+        try {
+            validate(['field' => ['invalid' => 'bro']], $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            $errors = $e->getErrors();
+            expect($errors)->toBe($expectedErrors);
+        }
+    })->with([
+        'different-values' => [
+            'model' => new class extends BaseModel {
+                public EnumStrOneValue|EnumBasicOneValue|EnumIntOneValue $field;
+            },
+            'expectedErrors' => [
+                'field' => ["Must be 'one', 'One' or 1"],
+            ],
+        ],
+        'repeated-values' => [
+            'model' => new class extends BaseModel {
+                public EnumStrOneValue|EnumStrTwoValues $field;
+            },
+            'expectedErrors' => [
+                'field' => ["Must be 'one', 'one' or 'two'"],
+            ],
+        ],
+    ]);
+
+    it('generates proper message for basic and class unions', function (BaseModel $model, array $expectedErrors) {
+        try {
+            validate(['field' => ['invalid' => 'bro']], $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            $errors = $e->getErrors();
+            expect($errors)->toBe($expectedErrors);
+        }
+    })->with([
+        'two-type-hints' => [
+            'model' => new class extends BaseModel {
+                public BasicModel|bool $field;
+            },
+            'expectedErrors' => [
+                'field.field' => ['Field is required'],
+                'field' => ['Must be boolean or Attributes\Validation\Tests\Integration\Validate\BasicModel'],
+            ],
+        ],
+        'five-type-hints' => [
+            'model' => new class extends BaseModel {
+                public bool|int|float|BasicModel|SecondBasicModel $field;
+            },
+            'expectedErrors' => [
+                'field.field' => ['Field is required'],
+                'field.secondField' => ['Field is required'],
+                'field' => [
+                    'Must be boolean, integer, float, Attributes\Validation\Tests\Integration\Validate\BasicModel or Attributes\Validation\Tests\Integration\Validate\SecondBasicModel',
+                ],
+            ],
+        ],
+    ]);
+
+    it('generates proper message for basic, class and enum unions', function (BaseModel $model, array $expectedErrors) {
+        try {
+            validate(['field' => ['invalid' => 'bro']], $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            $errors = $e->getErrors();
+            expect($errors)->toBe($expectedErrors);
+        }
+    })->with([
+        'two-type-hints' => [
+            'model' => new class extends BaseModel {
+                public bool|EnumStrOneValue $field;
+            },
+            'expectedErrors' => [
+                'field' => ["Must be boolean or 'one'"],
+            ],
+        ],
+        'six-type-hints' => [
+            'model' => new class extends BaseModel {
+                public int|float|BasicModel|SecondBasicModel|EnumStrOneValue|EnumBasicTwoValues $field;
+            },
+            'expectedErrors' => [
+                'field.field' => ['Field is required'],
+                'field.secondField' => ['Field is required'],
+                'field' => [
+                    "Must be integer, float, Attributes\Validation\Tests\Integration\Validate\BasicModel, Attributes\Validation\Tests\Integration\Validate\SecondBasicModel, 'one', 'One' or 'Two'",
+                ],
+            ],
+        ],
+    ]);
+});
+
+describe('custom ErrorMessage attribute messages', function () {
+    it('uses custom messages from the ErrorMessage attribute with named arguments', function (
+        BaseModel $model,
+        array $input,
+        array $expectedErrors,
+    ) {
+        try {
+            validate($input, $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            expect($e->getErrors())->toBe($expectedErrors);
+        }
+    })->with([
+        'custom required message' => [
+            'model' => new class extends BaseModel {
+                #[ErrorMessage(required: '{field} is missing', type: 'Ups wrong type {expected}')]
+                public string $name;
+            },
+            'input' => [],
+            'expectedErrors' => [
+                'name' => ['name is missing'],
+            ],
+        ],
+        'custom type message' => [
+            'model' => new class extends BaseModel {
+                #[ErrorMessage(required: '{field} is missing', type: 'Ups wrong type {expected}')]
+                public string $name;
+            },
+            'input' => ['name' => ['not' => 'a string']],
+            'expectedErrors' => [
+                'name' => ['Ups wrong type string'],
+            ],
+        ],
+        'custom messages do not leak to sibling fields' => [
+            'model' => new class extends BaseModel {
+                #[ErrorMessage(required: '{field} is missing', type: 'Ups wrong type {expected}')]
+                public string $name;
+
+                public int $age;
+            },
+            'input' => ['name' => 'Jane'],
+            'expectedErrors' => [
+                'age' => ['Field is required'],
+            ],
+        ],
+        'custom messages keep the nested property path' => [
+            'model' => new OneLevelNestedModelWithCustomMessages,
+            'input' => ['one' => []],
+            'expectedErrors' => [
+                'one.field' => ['field is missing'],
+            ],
+        ],
+        'custom type message expands enum cases in {expected}' => [
+            'model' => new class extends BaseModel {
+                #[ErrorMessage(required: '{field} is missing', type: 'pick one of {expected}')]
+                public EnumBasicTwoValues|EnumStrTwoValues $field;
+            },
+            'input' => ['field' => 'invalid'],
+            'expectedErrors' => [
+                'field' => ["pick one of 'One', 'Two', 'one' or 'two'"],
+            ],
+        ],
+        'custom type message renders the received value in {value}' => [
+            'model' => new class extends BaseModel {
+                #[ErrorMessage(type: 'expected {expected}, got {value}', required: '{field} is missing')]
+                public ?string $nick;
+            },
+            'input' => ['nick' => ['an' => 'array']],
+            'expectedErrors' => [
+                'nick' => ['expected string or null, got array'],
+            ],
+        ],
+    ]);
+
+    it('uses custom messages from the ErrorMessage attribute with positional arguments', function (
+        BaseModel $model,
+        array $input,
+        array $expectedErrors,
+    ) {
+        try {
+            validate($input, $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            expect($e->getErrors())->toBe($expectedErrors);
+        }
+    })->with([
+        'custom required message' => [
+            'model' => new class extends BaseModel {
+                #[ErrorMessage('give me {field}', 'expected {expected}')]
+                public string $name;
+            },
+            'input' => [],
+            'expectedErrors' => [
+                'name' => ['give me name'],
+            ],
+        ],
+        'custom type message' => [
+            'model' => new class extends BaseModel {
+                #[ErrorMessage('give me {field}', 'expected {expected}')]
+                public string $name;
+            },
+            'input' => ['name' => ['an' => 'array']],
+            'expectedErrors' => [
+                'name' => ['expected string'],
+            ],
+        ],
+    ]);
+
+    it('uses ErrorMessage but uses default messages', function (BaseModel $model, array $input, array $expectedErrors) {
+        try {
+            validate($input, $model);
+            expect(false)->toBeTrue();
+        } catch (ValidationException $e) {
+            expect($e->getMessage())->toBe('Invalid data');
+            expect($e->getErrors())->toBe($expectedErrors);
+        }
+    })->with([
+        'uses default required' => [
+            'model' => new class extends BaseModel {
+                #[ErrorMessage(type: 'Ups wrong type {expected}')]
+                public string $name;
+            },
+            'input' => [],
+            'expectedErrors' => [
+                'name' => ['Field is required'],
+            ],
+        ],
+        'uses default type' => [
+            'model' => new class extends BaseModel {
+                #[ErrorMessage(required: '{field} is missing')]
+                public bool|string|int $name;
+            },
+            'input' => ['name' => ['not' => 'a string']],
+            'expectedErrors' => [
+                'name' => ['Must be boolean, integer or string'],
+            ],
+        ],
+        'uses default type - positional argument' => [
+            'model' => new class extends BaseModel {
+                #[ErrorMessage('{field} is missing')]
+                public bool|string|int $name;
+            },
+            'input' => ['name' => ['not' => 'a string']],
+            'expectedErrors' => [
+                'name' => ['Must be boolean, integer or string'],
+            ],
+        ],
+    ]);
+
+    it('invalid ErrorMessage arguments', function (BaseModel $model, array $input) {
+        validate($input, $model);
+    })->throws(ValueError::class)
+        ->with([
+            'invalid required' => [
+                'model' => new class extends BaseModel {
+                    #[ErrorMessage(required: 123)]
+                    public string $name;
+                },
+                'input' => [],
+            ],
+            'invalid type' => [
+                'model' => new class extends BaseModel {
+                    #[ErrorMessage(type: true)]
+                    public string $name;
+                },
+                'input' => ['name' => []],
+            ],
+        ]);
+});
