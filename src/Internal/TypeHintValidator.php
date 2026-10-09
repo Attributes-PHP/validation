@@ -7,9 +7,7 @@ namespace Attributes\Validation\Internal;
 use Attributes\Validation\BaseModel;
 use ReflectionClass;
 use ReflectionIntersectionType;
-use ReflectionNamedType;
 use ReflectionProperty;
-use ReflectionType;
 use ReflectionUnionType;
 
 /**
@@ -128,7 +126,7 @@ final class TypeHintValidator
      *
      * Returns the accepted value, or null when the arm rejects the value.
      *
-     * @param array{class: string, dateTime: bool, baseModel: bool} $arm
+     * @param  array{class: string, dateTime: bool, baseModel: bool}  $arm
      */
     public static function handleClass(
         mixed $value,
@@ -245,7 +243,7 @@ final class TypeHintValidator
     /**
      * Whether an object matches one of the class arms.
      *
-     * @param list<array{class: string, dateTime: bool, baseModel: bool}> $classes
+     * @param  list<array{class: string, dateTime: bool, baseModel: bool}>  $classes
      */
     private static function instanceofAny(object $value, array $classes): bool
     {
