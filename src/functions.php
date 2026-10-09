@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Attributes\Validation;
 
+use ArrayAccess;
+use Attributes\Validation\Internal\Caller;
 use Attributes\Validation\Internal\Hydrator;
 
 /**
@@ -15,4 +17,15 @@ use Attributes\Validation\Internal\Hydrator;
 function validate(array $rawData, BaseModel $model): BaseModel
 {
     return Hydrator::hydrate($rawData, $model);
+}
+
+/**
+ * Calls a function or callable with validated models: BaseModel parameters
+ * hydrate from the raw data array through the same engine validate() uses,
+ * and every other parameter is injected from a dependencies array or
+ * ArrayAccess container.
+ */
+function call(string|callable $function, array $params, array|ArrayAccess $dependencies = []): mixed
+{
+    return Caller::call($function, $params, $dependencies);
 }
