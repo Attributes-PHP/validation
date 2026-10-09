@@ -18,13 +18,14 @@ use ReflectionProperty;
 final class Hydrator
 {
     /**
-     * The public non-static properties of each model class hierarchy,
-     * walked once per class (the model class first, up to but excluding
-     * BaseModel).
+     * The prepared property entries of each model class hierarchy per
+     * alias generator: the property reflection, its resolved field name
+     * and whether it declares a default value, all static per class, so
+     * the walk and the field-name resolution run once per class.
      *
-     * @var array<string, list<ReflectionProperty>>
+     * @var array<string, list<array{property: ReflectionProperty, fieldName: string, hasDefault: bool}>>
      */
-    private static array $propertiesCache = [];
+    private static array $entriesCache = [];
 
     /**
      * Whether each model class overrides one of the validation hooks.
@@ -80,15 +81,17 @@ final class Hydrator
         array &$errors,
         ?string $parentPath,
     ): bool {
-        foreach (self::properties($model::class) as $property) {
-            $fieldName = FieldNameResolver::resolve($property, $configs->aliasGenerator);
+        $cacheKey = $model::class."\0".(string) $configs->aliasGenerator;
+
+        foreach (self::entries($cacheKey, $model::class, $configs->aliasGenerator) as $entry) {
+            $fieldName = $entry['fieldName'];
 
             if (! array_key_exists($fieldName, $rawData)) {
-                if ($property->hasDefaultValue()) {
+                if ($entry['hasDefault']) {
                     continue;
                 }
 
-                ErrorMessages::addFieldError(ErrorMessages::REQUIRED, $parentPath, $fieldName, $property, null, $errors);
+                ErrorMessages::addFieldError(ErrorMessages::REQUIRED, $parentPath, $fieldName, $entry['property'], null, $errors);
 
                 if ($configs->stopAtFirstError) {
                     return false;
@@ -98,7 +101,7 @@ final class Hydrator
             }
 
             $value = $rawData[$fieldName];
-            $result = TypeHintValidator::validate($value, $property, $configs, $errors, $parentPath, $fieldName);
+            $result = TypeHintValidator::validate($value, $entry['property'], $configs, $errors, $parentPath, $fieldName);
 
             if (! $result['ok']) {
                 if ($configs->stopAtFirstError) {
@@ -108,25 +111,25 @@ final class Hydrator
                 continue;
             }
 
-            $property->setValue($model, $result['value']);
+            $entry['property']->setValue($model, $result['value']);
         }
 
         return $errors === [];
     }
 
     /**
-     * The public non-static properties of the model class hierarchy,
-     * cached per class.
+     * The prepared property entries of the model class hierarchy,
+     * cached per class and alias generator.
      *
-     * @return list<ReflectionProperty>
+     * @return list<array{property: ReflectionProperty, fieldName: string, hasDefault: bool}>
      */
-    private static function properties(string $class): array
+    private static function entries(string $cacheKey, string $class, ?string $generator): array
     {
-        if (isset(self::$propertiesCache[$class])) {
-            return self::$propertiesCache[$class];
+        if (isset(self::$entriesCache[$cacheKey])) {
+            return self::$entriesCache[$cacheKey];
         }
 
-        $properties = [];
+        $entries = [];
 
         for ($current = $class; $current !== false && $current !== BaseModel::class; $current = get_parent_class($current)) {
             $reflection = new ReflectionClass($current);
@@ -140,11 +143,15 @@ final class Hydrator
                     continue;
                 }
 
-                $properties[] = $property;
+                $entries[] = [
+                    'property' => $property,
+                    'fieldName' => FieldNameResolver::resolve($property, $generator),
+                    'hasDefault' => $property->hasDefaultValue(),
+                ];
             }
         }
 
-        return self::$propertiesCache[$class] = $properties;
+        return self::$entriesCache[$cacheKey] = $entries;
     }
 
     /**
