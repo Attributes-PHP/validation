@@ -18,10 +18,25 @@ use ReflectionUnionType;
  * the builtin arms of a union collapse into one basic mask whose loose
  * verification prefers boolean, then integer, float, string.
  *
+ * Type hints are compiled into TypePlan instances once per property, so the
+ * arm walk and the class resolution do not repeat per validated value.
+ *
  * @internal
  */
 final class TypeHintValidator
 {
+    /**
+     * @var array<string, TypePlan>
+     */
+    private static array $planCache = [];
+
+    /**
+     * The compiled class flags: DateTime-like and BaseModel subclass.
+     *
+     * @var array<string, array{dateTime: bool, baseModel: bool}>
+     */
+    private static array $classFlags = [];
+
     /**
      * Validates a value against the property type hint, coercing it when
      * needed. Returns ['ok' => bool, 'value' => mixed].
@@ -33,14 +48,21 @@ final class TypeHintValidator
         array &$errors,
         ?string $parentPath,
         string $fieldName,
+        ?TypePlan $plan = null,
     ): array {
-        $type = $property->getType();
+        $plan ??= self::plan($property);
 
-        if ($type === null) {
+        if ($plan->untyped) {
             return ['ok' => true, 'value' => $value];
         }
 
-        if (self::exactMatch($type, $value)) {
+        $typeMask = Masks::of($value);
+        $exact = $plan->mixed
+            || ($typeMask & $plan->basicMask) !== 0
+            || ($plan->iterable && (is_array($value) || $value instanceof \Traversable))
+            || ($plan->classes !== [] && is_object($value) && self::instanceofAny($value, $plan->classes));
+
+        if ($exact) {
             if (is_array($value)) {
                 $ok = ArraySpecValidator::validateArray($value, $property, $configs, $errors, $parentPath, $fieldName);
 
@@ -50,39 +72,15 @@ final class TypeHintValidator
             return ['ok' => true, 'value' => $value];
         }
 
-        $basicMask = 0;
-        $namedArms = [];
-        $intersectionArms = [];
-
-        foreach (self::arms($type) as $arm) {
-            if ($arm instanceof ReflectionIntersectionType) {
-                $intersectionArms[] = $arm;
-
-                continue;
-            }
-
-            if ($arm->allowsNull()) {
-                $basicMask |= Masks::NULL;
-            }
-
-            if ($arm->isBuiltin()) {
-                $basicMask |= Masks::forName($arm->getName());
-
-                continue;
-            }
-
-            $namedArms[] = $arm;
-        }
-
-        if ($basicMask !== 0) {
-            if (! $configs->strict && ($basicMask & Masks::BOOL) !== 0) {
+        if ($plan->basicMask !== 0) {
+            if (! $configs->strict && ($plan->basicMask & Masks::BOOL) !== 0) {
                 $bool = Coercion::coerceBool($value);
 
                 if ($bool !== null) {
                     return ['ok' => true, 'value' => $bool];
                 }
             } else {
-                $coerced = Coercion::verifyScalar($value, $basicMask, $configs->strict);
+                $coerced = Coercion::verifyScalar($value, $plan->basicMask, $configs->strict);
 
                 if ($coerced !== null) {
                     return ['ok' => true, 'value' => $coerced];
@@ -90,77 +88,37 @@ final class TypeHintValidator
             }
         }
 
-        foreach ($intersectionArms as $arm) {
-            if (self::matchesIntersection($arm, $value, $property)) {
-                return ['ok' => true, 'value' => $value];
+        if (is_object($value)) {
+            foreach ($plan->intersections as $members) {
+                $matches = true;
+
+                foreach ($members as $member) {
+                    if (! $value instanceof $member) {
+                        $matches = false;
+
+                        break;
+                    }
+                }
+
+                if ($matches) {
+                    return ['ok' => true, 'value' => $value];
+                }
             }
         }
 
-        foreach ($namedArms as $arm) {
-            $class = self::resolveClassName($arm->getName(), $property);
-
-            if ($class === null) {
-                continue;
-            }
-
-            $handled = self::handleClass($value, $class, $configs, $errors, $parentPath, $fieldName);
+        foreach ($plan->classes as $arm) {
+            $handled = self::handleClass($value, $arm, $configs, $errors, $parentPath, $fieldName);
 
             if ($handled !== null) {
                 return ['ok' => true, 'value' => $handled];
             }
         }
 
-        if (! self::isBaseModelPropertyHint($type, $property)) {
+        if (! $plan->singleBaseModel) {
             ErrorMessages::addFieldError(ErrorMessages::TYPE, $parentPath, $fieldName, $property, $value, $errors);
         }
 
         return ['ok' => false, 'value' => $value];
-    }
-
-    /**
-     * Whether the value's type is already allowed by the hint, without any
-     * coercion.
-     */
-    private static function exactMatch(ReflectionType $type, mixed $value): bool
-    {
-        foreach (self::arms($type) as $arm) {
-            if (! $arm instanceof ReflectionNamedType) {
-                continue;
-            }
-
-            $name = $arm->getName();
-
-            if ($arm->allowsNull() && $value === null) {
-                return true;
-            }
-
-            if ($arm->isBuiltin()) {
-                if (match ($name) {
-                    'bool' => is_bool($value),
-                    'int' => is_int($value),
-                    'float' => is_float($value),
-                    'string' => is_string($value),
-                    'array' => is_array($value),
-                    'object' => is_object($value),
-                    'null' => $value === null,
-                    'false' => $value === false,
-                    'true' => $value === true,
-                    'mixed' => true,
-                    'iterable' => is_array($value) || $value instanceof \Traversable,
-                    default => false,
-                }) {
-                    return true;
-                }
-
-                continue;
-            }
-
-            if (is_object($value) && $value instanceof $name) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -169,16 +127,20 @@ final class TypeHintValidator
      * BaseModel instances.
      *
      * Returns the accepted value, or null when the arm rejects the value.
+     *
+     * @param array{class: string, dateTime: bool, baseModel: bool} $arm
      */
     public static function handleClass(
         mixed $value,
-        string $class,
+        array|string $arm,
         ResolvedConfigs $configs,
         array &$errors,
         ?string $parentPath,
         string $fieldName,
     ): mixed {
-        if (is_string($value) && self::isDateTimeClass($class) && strlen($value) > 12) {
+        $arm = is_string($arm) ? self::classFlags($arm) : $arm;
+
+        if ($arm['dateTime'] && is_string($value) && strlen($value) > 12) {
             $datetime = date_create_from_format('X-m-d\TH:i:sP', $value);
 
             if ($datetime !== false) {
@@ -186,11 +148,13 @@ final class TypeHintValidator
             }
         }
 
+        $class = $arm['class'];
+
         if (is_object($value) && $value instanceof $class) {
             return $value;
         }
 
-        if (is_array($value) && $class !== BaseModel::class && is_subclass_of($class, BaseModel::class)) {
+        if ($arm['baseModel'] && is_array($value)) {
             $model = (new ReflectionClass($class))->newInstanceWithoutConstructor();
             $nestedPath = ($parentPath === null || $parentPath === '') ? $fieldName : $parentPath.'.'.$fieldName;
 
@@ -203,48 +167,115 @@ final class TypeHintValidator
     }
 
     /**
-     * Whether a value object matches every member of an intersection type.
+     * Compiles the type hint of a property into a plan, cached per
+     * property.
      */
-    private static function matchesIntersection(ReflectionIntersectionType $type, mixed $value, ReflectionProperty $property): bool
+    public static function plan(ReflectionProperty $property): TypePlan
     {
-        if (! is_object($value)) {
-            return false;
+        $cacheKey = $property->getDeclaringClass()->getName().'::$'.$property->getName();
+
+        if (isset(self::$planCache[$cacheKey])) {
+            return self::$planCache[$cacheKey];
         }
 
-        foreach ($type->getTypes() as $arm) {
-            $class = self::resolveClassName($arm->getName(), $property);
+        $plan = new TypePlan;
+        $type = $property->getType();
 
-            if ($class === null || ! $value instanceof $class) {
-                return false;
+        if ($type === null) {
+            $plan->untyped = true;
+
+            return self::$planCache[$cacheKey] = $plan;
+        }
+
+        $singleNamed = null;
+        $arms = $type instanceof ReflectionUnionType ? $type->getTypes() : [$type];
+
+        foreach ($arms as $arm) {
+            if ($arm instanceof ReflectionIntersectionType) {
+                $members = [];
+
+                foreach ($arm->getTypes() as $member) {
+                    $members[] = self::resolveClassName($member->getName(), $property);
+                }
+
+                // An unresolvable member can never match, so the whole
+                // intersection arm contributes no match
+                if (! in_array(null, $members, true)) {
+                    $plan->intersections[] = $members;
+                }
+
+                continue;
+            }
+
+            if ($arm->allowsNull()) {
+                $plan->basicMask |= Masks::NULL;
+            }
+
+            $name = $arm->getName();
+
+            if ($arm->isBuiltin()) {
+                if ($name === 'mixed') {
+                    $plan->mixed = true;
+                } elseif ($name === 'iterable') {
+                    $plan->iterable = true;
+                    $plan->basicMask |= Masks::ARRAY;
+                } else {
+                    $plan->basicMask |= Masks::forName($name);
+                }
+
+                continue;
+            }
+
+            $singleNamed = $singleNamed === null ? $name : $singleNamed;
+            $class = self::resolveClassName($name, $property);
+
+            if ($class !== null) {
+                $flags = self::classFlags($class);
+                $plan->classes[] = ['class' => $class, 'dateTime' => $flags['dateTime'], 'baseModel' => $flags['baseModel']];
             }
         }
 
-        return true;
-    }
-
-    /**
-     * Whether the property hint is a single BaseModel class, whose nested
-     * hydration already reported the error.
-     */
-    private static function isBaseModelPropertyHint(ReflectionType $type, ReflectionProperty $property): bool
-    {
-        if ($type instanceof ReflectionUnionType || ! $type instanceof ReflectionNamedType || $type->isBuiltin()) {
-            return false;
+        if (count($arms) === 1 && $singleNamed !== null) {
+            $plan->singleBaseModel = $plan->classes !== [] && $plan->classes[0]['baseModel'];
         }
 
-        $class = self::resolveClassName($type->getName(), $property);
-
-        return $class !== null && is_subclass_of($class, BaseModel::class);
+        return self::$planCache[$cacheKey] = $plan;
     }
 
     /**
-     * Whether the class is DateTime or implements DateTimeInterface.
+     * Whether an object matches one of the class arms.
+     *
+     * @param list<array{class: string, dateTime: bool, baseModel: bool}> $classes
      */
-    private static function isDateTimeClass(string $class): bool
+    private static function instanceofAny(object $value, array $classes): bool
     {
-        return $class === \DateTime::class
-            || $class === \DateTimeInterface::class
-            || is_subclass_of($class, \DateTimeInterface::class);
+        foreach ($classes as $arm) {
+            if ($value instanceof $arm['class']) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The compiled flags of a class: DateTime-like and BaseModel subclass.
+     *
+     * @return array{dateTime: bool, baseModel: bool}
+     */
+    private static function classFlags(string $class): array
+    {
+        if (isset(self::$classFlags[$class])) {
+            return self::$classFlags[$class];
+        }
+
+        return self::$classFlags[$class] = [
+            'class' => $class,
+            'dateTime' => $class === \DateTime::class
+                || $class === \DateTimeInterface::class
+                || is_subclass_of($class, \DateTimeInterface::class),
+            'baseModel' => $class !== BaseModel::class && is_subclass_of($class, BaseModel::class),
+        ];
     }
 
     /**
@@ -265,19 +296,5 @@ final class TypeHintValidator
         $name = ltrim($name, '\\');
 
         return Value::isResolvableClassName($name) ? $name : null;
-    }
-
-    /**
-     * The named type arms of a type hint.
-     *
-     * @return array<int, ReflectionNamedType|ReflectionIntersectionType>
-     */
-    private static function arms(ReflectionType $type): array
-    {
-        if ($type instanceof ReflectionUnionType) {
-            return $type->getTypes();
-        }
-
-        return [$type];
     }
 }

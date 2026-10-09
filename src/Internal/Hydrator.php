@@ -23,7 +23,7 @@ final class Hydrator
      * and whether it declares a default value, all static per class, so
      * the walk and the field-name resolution run once per class.
      *
-     * @var array<string, list<array{property: ReflectionProperty, fieldName: string, hasDefault: bool}>>
+     * @var array<string, list<array{property: ReflectionProperty, fieldName: string, hasDefault: bool, plan: TypePlan}>>
      */
     private static array $entriesCache = [];
 
@@ -101,7 +101,7 @@ final class Hydrator
             }
 
             $value = $rawData[$fieldName];
-            $result = TypeHintValidator::validate($value, $entry['property'], $configs, $errors, $parentPath, $fieldName);
+            $result = TypeHintValidator::validate($value, $entry['property'], $configs, $errors, $parentPath, $fieldName, $entry['plan']);
 
             if (! $result['ok']) {
                 if ($configs->stopAtFirstError) {
@@ -121,7 +121,7 @@ final class Hydrator
      * The prepared property entries of the model class hierarchy,
      * cached per class and alias generator.
      *
-     * @return list<array{property: ReflectionProperty, fieldName: string, hasDefault: bool}>
+     * @return list<array{property: ReflectionProperty, fieldName: string, hasDefault: bool, plan: TypePlan}
      */
     private static function entries(string $cacheKey, string $class, ?string $generator): array
     {
@@ -147,6 +147,7 @@ final class Hydrator
                     'property' => $property,
                     'fieldName' => FieldNameResolver::resolve($property, $generator),
                     'hasDefault' => $property->hasDefaultValue(),
+                    'plan' => TypeHintValidator::plan($property),
                 ];
             }
         }
