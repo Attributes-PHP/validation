@@ -1,7 +1,7 @@
 {
     "name": "attributes-php/validation",
     "type": "library",
-    "description": "The PHP Pydantic validation library which supports data validation via type-hinting",
+    "description": "Pydantic-inspired PHP library for validating data via type hints at lightning speed",
     "keywords": [
         "validation",
         "fast",
@@ -9,21 +9,24 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.1",
-        "respect/validation": "^2.0",
-        "attributes-php/options": "^0.1"
+        "php": "^8.2"
     },
     "autoload": {
         "psr-4": {
             "Attributes\\Validation\\": "src/"
-        }
+        },
+        "files": [
+            "src/constants.php",
+            "src/functions.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
-            "Attributes\\Validation\\Tests\\": "tests/"
+            "Attributes\\Validation\\Tests\\": "tests/Integration/",
+            "Attributes\\Validation\\Tests\\Benchmark\\": "tests/Benchmark/"
         },
         "classmap": [
-            "tests/Models"
+            "tests/Integration/Models/"
         ]
     },
     "require-dev": {
@@ -32,16 +35,13 @@
         "phpbench/phpbench": "^1.4"
     },
     "scripts": {
-        "lint": "./vendor/bin/pint --config pint.json",
-        "benchmark": "./vendor/bin/phpbench run tests/Benchmark/Base.php --tag=base --quiet && ./vendor/bin/phpbench run tests/Benchmark/Benchmark.php --report=aggregate --ref=base",
-        "test:lint": "./vendor/bin/pint --test",
+        "lint": "./vendor/bin/pint src",
+        "benchmark": "./vendor/bin/phpbench run tests/Benchmark --report=aggregate",
+        "test:lint": "./vendor/bin/pint --test src",
         "test:coverage": "./vendor/bin/pest --coverage --parallel",
-        "test:unit": "./vendor/bin/pest --colors=always --exclude-group=integration --parallel",
-        "test:integration": "./vendor/bin/pest --colors=always --group=integration",
         "test": [
             "@test:lint",
-            "@test:unit",
-            "@test:integration"
+            "./vendor/bin/pest --colors=always"
         ]
     },
     "prefer-stable": true,
