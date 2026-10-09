@@ -133,6 +133,13 @@ final class Coercion
         }
 
         if (is_string($value)) {
+            // Integer round-trip fast path when int is the only scalar
+            // target: a matching string parses to the same integer the
+            // slow path would produce
+            if ($mask === Masks::INT && $value === (string) (int) $value) {
+                return (int) $value;
+            }
+
             $number = self::parseNumeric($value);
 
             if (($mask & Masks::INT) && $number !== null && $number['isIntegral']) {
@@ -174,13 +181,12 @@ final class Coercion
      */
     private static function parseNumeric(string $value): ?array
     {
-        $trimmed = trim($value);
-
-        if ($trimmed === '' || ! is_numeric($trimmed)) {
+        // is_numeric accepts surrounding whitespace, like the engine
+        if (! is_numeric($value)) {
             return null;
         }
 
-        $float = (float) $trimmed;
+        $float = (float) $value;
 
         return [
             'value' => $float,
